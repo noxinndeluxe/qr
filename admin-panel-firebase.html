@@ -565,8 +565,9 @@
         }
 
         function getTimerClass(seconds) {
-            if (seconds < 120) return 'warning';
-            if (seconds >= 120) return 'danger';
+            if (seconds < 60) return ''; // 1 dakikadan az - normal
+            if (seconds >= 60 && seconds < 180) return 'warning'; // 1-3 dakika - sarı
+            if (seconds >= 180) return 'danger'; // 3+ dakika - kırmızı yanıp söner
             return '';
         }
 
