@@ -518,63 +518,21 @@
         function playNotificationSound() {
             if (!soundEnabled) return;
             
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // İLK BİP (Kısa ve keskin)
-                const osc1 = audioContext.createOscillator();
-                const gain1 = audioContext.createGain();
-                
-                osc1.connect(gain1);
-                gain1.connect(audioContext.destination);
-                
-                osc1.frequency.value = 880; // A5 nota - yüksek ve dikkat çekici
-                osc1.type = 'sine';
-                
-                gain1.gain.setValueAtTime(0, audioContext.currentTime);
-                gain1.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.01);
-                gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-                
-                osc1.start(audioContext.currentTime);
-                osc1.stop(audioContext.currentTime + 0.15);
-                
-                // İKİNCİ BİP (Biraz daha uzun ve yüksek)
-                const osc2 = audioContext.createOscillator();
-                const gain2 = audioContext.createGain();
-                
-                osc2.connect(gain2);
-                gain2.connect(audioContext.destination);
-                
-                osc2.frequency.value = 1046; // C6 nota - daha yüksek
-                osc2.type = 'sine';
-                
-                gain2.gain.setValueAtTime(0, audioContext.currentTime + 0.2);
-                gain2.gain.linearRampToValueAtTime(0.45, audioContext.currentTime + 0.21);
-                gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                
-                osc2.start(audioContext.currentTime + 0.2);
-                osc2.stop(audioContext.currentTime + 0.5);
-                
-                // ÜÇÜNCÜ BİP (Vurgu - en uzun)
-                const osc3 = audioContext.createOscillator();
-                const gain3 = audioContext.createGain();
-                
-                osc3.connect(gain3);
-                gain3.connect(audioContext.destination);
-                
-                osc3.frequency.value = 1318; // E6 nota - çok yüksek ve uyarıcı
-                osc3.type = 'sine';
-                
-                gain3.gain.setValueAtTime(0, audioContext.currentTime + 0.55);
-                gain3.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.56);
-                gain3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-                
-                osc3.start(audioContext.currentTime + 0.55);
-                osc3.stop(audioContext.currentTime + 1);
-                
-            } catch (error) {
-                console.error('Ses çalma hatası:', error);
-            }
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
         }
 
         function showToast(title, message) {
