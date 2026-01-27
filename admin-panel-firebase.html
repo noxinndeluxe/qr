@@ -571,12 +571,16 @@
         }
 
         function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
             const secs = seconds % 60;
-            if (minutes > 0) {
-                return `${minutes}d ${secs}s`;
+            
+            if (hours > 0) {
+                return `${hours}s ${minutes}d ${secs}sn`;
+            } else if (minutes > 0) {
+                return `${minutes}d ${secs}sn`;
             }
-            return `${secs}s`;
+            return `${secs}sn`;
         }
 
         window.completeRequest = async function(id) {
@@ -647,7 +651,21 @@
                 const elapsed = Math.floor((now - createdDate) / 1000);
                 const timerClass = getTimerClass(elapsed);
                 const isNew = elapsed < 10 && req.status === 'pending';
-                const timeStr = req.timestamp || createdDate.toLocaleTimeString('tr-TR');
+                
+                // Convert timestamp to time format
+                let timeStr;
+                if (req.timestamp && typeof req.timestamp === 'string' && req.timestamp.includes('Timestamp')) {
+                    // Parse Firebase Timestamp format
+                    const match = req.timestamp.match(/seconds=(\d+)/);
+                    if (match) {
+                        const date = new Date(parseInt(match[1]) * 1000);
+                        timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                    } else {
+                        timeStr = createdDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                    }
+                } else {
+                    timeStr = createdDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                }
 
                 return `
                     <div class="request-card ${req.status}">
@@ -667,7 +685,7 @@
                         <div class="card-body">
                             <div class="info-row">
                                 <span class="info-label">Zaman:</span>
-                                <span class="info-value">${timeStr}</span>
+                                <span class="info-value">${createdDate.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-label">Durum:</span>
