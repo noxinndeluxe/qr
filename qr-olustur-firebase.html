@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Kod Yazdırma - Restoran</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 150px;
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #059669;
+        }
+
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .qr-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            page-break-inside: avoid;
+        }
+
+        .qr-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .qr-card h3 {
+            color: #667eea;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .qr-card .table-label {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .qr-code-container {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .qr-card .instructions {
+            font-size: 12px;
+            color: #666;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .url-display {
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            color: #666;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .controls, .subtitle {
+                display: none;
+            }
+
+            h1 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .qr-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .qr-card {
+                border: 2px solid #333;
+                page-break-inside: avoid;
+                margin-bottom: 15px;
+            }
+
+            .qr-card:hover {
+                transform: none;
+                box-shadow: none;
+            }
+        }
+
+        .info-box {
+            background: #fff9e6;
+            border-left: 4px solid #fbbf24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #d97706;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .test-link {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .test-link:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ Restoran QR Kod Sistemi</h1>
+        <p class="subtitle">Masalarınız için QR kodları oluşturun ve yazdırın</p>
+
+        <div class="info-box">
+            <h3>📱 Nasıl Çalışır?</h3>
+            <ul>
+                <li>Her masa için benzersiz QR kod oluşturulur</li>
+                <li>Misafir QR'ı telefonuyla tarar</li>
+                <li>Garson çağırma sayfası otomatik açılır</li>
+                <li>Misafir istediği hizmeti seçer (Garson, Hesap, Yardım)</li>
+                <li>Bildirim anında gelir!</li>
+            </ul>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Restoran Adı</label>
+                <input type="text" id="restoranAdi" value="Restoran" placeholder="Restoran adı">
+            </div>
+            <div class="control-group">
+                <label>Başlangıç Masa No</label>
+                <input type="number" id="baslangic" value="1" min="1">
+            </div>
+            <div class="control-group">
+                <label>Bitiş Masa No</label>
+                <input type="number" id="bitis" value="20" min="1">
+            </div>
+            <button class="btn btn-primary" onclick="generateQRCodes()">🎯 QR Kodları Oluştur</button>
+            <button class="btn btn-secondary" onclick="window.print()">🖨️ Yazdır</button>
+        </div>
+
+        <div id="qrGrid" class="qr-grid">
+            <!-- QR kodlar buraya eklenecek -->
+        </div>
+    </div>
+
+    <script>
+        // Firebase URL - GÜNCELLENMİŞ!
+        const BASE_URL = 'https://noxinndeluxe.github.io/qr/garson-cagir-firebase.html';
+
+        function generateQRCodes() {
+            const baslangic = parseInt(document.getElementById('baslangic').value);
+            const bitis = parseInt(document.getElementById('bitis').value);
+            const restoranAdi = document.getElementById('restoranAdi').value;
+            const grid = document.getElementById('qrGrid');
+            
+            grid.innerHTML = '';
+
+            for (let masa = baslangic; masa <= bitis; masa++) {
+                const card = document.createElement('div');
+                card.className = 'qr-card';
+                
+                const url = `${BASE_URL}?masa=${masa}`;
+                
+                card.innerHTML = `
+                    <h3>Masa ${masa}</h3>
+                    <div class="table-label">${restoranAdi}</div>
+                    <div class="qr-code-container">
+                        <div id="qr-${masa}"></div>
+                    </div>
+                    <div class="instructions">
+                        📱 QR'ı telefonla taratın<br>
+                        🍽️ Garson çağırın
+                    </div>
+                    <a href="${url}" target="_blank" class="test-link">🔗 Test Et</a>
+                    <div class="url-display">${url}</div>
+                `;
+                
+                grid.appendChild(card);
+                
+                // QR kod oluştur
+                new QRCode(document.getElementById(`qr-${masa}`), {
+                    text: url,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+        }
+
+        // Sayfa yüklendiğinde QR kodları oluştur
+        window.onload = function() {
+            generateQRCodes();
+        };
+    </script>
+</body>
+</html>
