@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şef Garson - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            color: #1e3c72;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            background: #f8f9ff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .stat-box .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .stat-box.pending .value {
+            color: #f59e0b;
+        }
+
+        .stat-box.completed .value {
+            color: #10b981;
+        }
+
+        .controls {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+        }
+
+        .btn-secondary {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #d97706;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active {
+            background: #1e3c72;
+            color: white;
+            border-color: #1e3c72;
+        }
+
+        .requests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .request-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .request-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+        }
+
+        .request-card.pending::before {
+            background: #f59e0b;
+        }
+
+        .request-card.completed::before {
+            background: #10b981;
+            opacity: 0.3;
+        }
+
+        .request-card.completed {
+            opacity: 0.6;
+        }
+
+        .request-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .masa-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .masa-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .request-type {
+            flex: 1;
+        }
+
+        .request-type .emoji {
+            font-size: 32px;
+        }
+
+        .request-type .type-label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .timer-badge {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .timer-badge.warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .timer-badge.danger {
+            background: #fee2e2;
+            color: #dc2626;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .card-body {
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .action-btn.complete {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-btn.complete:hover {
+            background: #059669;
+        }
+
+        .action-btn.delete {
+            background: #ef4444;
+            color: white;
+            flex: 0.5;
+        }
+
+        .action-btn.delete:hover {
+            background: #dc2626;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 16px;
+            padding: 60px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .empty-state .emoji {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+            border-left: 6px solid #f59e0b;
+            max-width: 350px;
+        }
+
+        .notification-toast.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .toast-message {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .sound-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .sound-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .sound-toggle label {
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .requests-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                width: 100%;
+            }
+
+            .stat-box {
+                flex: 1;
+            }
+        }
+
+        .new-badge {
+            background: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">🔄 Bağlanıyor...</div>
+
+    <div id="mainContent" style="display: none;">
+        <div class="header">
+            <h1>👨‍🍳 Şef Garson Paneli</h1>
+            <div class="stats">
+                <div class="stat-box pending">
+                    <div class="label">Bekleyen</div>
+                    <div class="value" id="pendingCount">0</div>
+                </div>
+                <div class="stat-box completed">
+                    <div class="label">Tamamlanan</div>
+                    <div class="value" id="completedCount">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Toplam</div>
+                    <div class="value" id="totalCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">Tümü</button>
+                <button class="filter-btn" data-filter="pending">Bekleyen</button>
+                <button class="filter-btn" data-filter="completed">Tamamlanan</button>
+            </div>
+            
+            <div class="sound-toggle">
+                <input type="checkbox" id="soundToggle" checked>
+                <label for="soundToggle">🔊 Ses Bildirimi</label>
+            </div>
+
+            <button class="btn btn-secondary" onclick="clearCompleted()">
+                🗑️ Tamamlananları Temizle
+            </button>
+        </div>
+
+        <div class="requests-grid" id="requestsGrid"></div>
+    </div>
+
+    <div class="notification-toast" id="notificationToast">
+        <div class="toast-title" id="toastTitle"></div>
+        <div class="toast-message" id="toastMessage"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAayB7410stMdKXgebXlQ2sSe08cy48SI0",
+            authDomain: "noxinn-qr.firebaseapp.com",
+            projectId: "noxinn-qr",
+            storageBucket: "noxinn-qr.firebasestorage.app",
+            messagingSenderId: "757343265554",
+            appId: "1:757343265554:web:b37008a2ab2a87adfbec9cb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentFilter = 'all';
+        let soundEnabled = true;
+        let lastRequestCount = 0;
+        let allRequests = [];
+
+        function playNotificationSound() {
+            if (!soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function showToast(title, message) {
+            const toast = document.getElementById('notificationToast');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 5000);
+        }
+
+        function updateStats() {
+            const pending = allRequests.filter(r => r.status === 'pending').length;
+            const completed = allRequests.filter(r => r.status === 'completed').length;
+            
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('totalCount').textContent = allRequests.length;
+
+            if (pending > lastRequestCount) {
+                playNotificationSound();
+                const newest = allRequests.filter(r => r.status === 'pending').pop();
+                if (newest) {
+                    showToast('🔔 Yeni Çağrı!', `Masa ${newest.masa} - ${newest.type}`);
+                }
+            }
+            lastRequestCount = pending;
+        }
+
+        function getTimerClass(seconds) {
+            if (seconds < 120) return 'warning';
+            if (seconds >= 120) return 'danger';
+            return '';
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            if (minutes > 0) {
+                return `${minutes}d ${secs}s`;
+            }
+            return `${secs}s`;
+        }
+
+        window.completeRequest = async function(id) {
+            try {
+                await updateDoc(doc(db, "requests", id), {
+                    status: 'completed',
+                    completedAt: new Date().toISOString()
+                });
+                showToast('✅ Tamamlandı', 'Talep başarıyla tamamlandı.');
+            } catch (error) {
+                console.error('Hata:', error);
+                showToast('⚠️ Hata', 'İşlem başarısız.');
+            }
+        }
+
+        window.deleteRequest = async function(id) {
+            if (!confirm('Bu talebi silmek istediğinizden emin misiniz?')) return;
+            
+            try {
+                await deleteDoc(doc(db, "requests", id));
+                showToast('🗑️ Silindi', 'Talep silindi.');
+            } catch (error) {
+                console.error('Hata:', error);
+                showToast('⚠️ Hata', 'Silme başarısız.');
+            }
+        }
+
+        window.clearCompleted = async function() {
+            if (!confirm('Tamamlanan tüm talepleri silmek istediğinizden emin misiniz?')) return;
+            
+            const completed = allRequests.filter(r => r.status === 'completed');
+            for (const req of completed) {
+                try {
+                    await deleteDoc(doc(db, "requests", req.id));
+                } catch (error) {
+                    console.error('Silme hatası:', error);
+                }
+            }
+            showToast('🗑️ Temizlendi', 'Tamamlanan talepler silindi.');
+        }
+
+        function renderRequests() {
+            const grid = document.getElementById('requestsGrid');
+            const now = new Date();
+
+            updateStats();
+
+            let filtered = allRequests;
+            if (currentFilter === 'pending') {
+                filtered = allRequests.filter(r => r.status === 'pending');
+            } else if (currentFilter === 'completed') {
+                filtered = allRequests.filter(r => r.status === 'completed');
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="emoji">😴</div>
+                        <h2>Henüz talep yok</h2>
+                        <p>Yeni çağrılar burada görünecek</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(req => {
+                const createdDate = req.createdAt ? new Date(req.createdAt) : new Date();
+                const elapsed = Math.floor((now - createdDate) / 1000);
+                const timerClass = getTimerClass(elapsed);
+                const isNew = elapsed < 10 && req.status === 'pending';
+                const timeStr = req.timestamp || createdDate.toLocaleTimeString('tr-TR');
+
+                return `
+                    <div class="request-card ${req.status}">
+                        <div class="card-header">
+                            <div class="masa-info">
+                                <div class="masa-number">${req.masa}</div>
+                                <div class="request-type">
+                                    <div class="emoji">${req.emoji}</div>
+                                    <div class="type-label">${req.type}</div>
+                                </div>
+                            </div>
+                            ${isNew ? '<span class="new-badge">YENİ</span>' : ''}
+                            <div class="timer-badge ${timerClass}">
+                                ⏱️ ${formatTime(elapsed)}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span class="info-label">Zaman:</span>
+                                <span class="info-value">${timeStr}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Durum:</span>
+                                <span class="info-value">${req.status === 'pending' ? '⏳ Bekliyor' : '✅ Tamamlandı'}</span>
+                            </div>
+                        </div>
+                        ${req.status === 'pending' ? `
+                            <div class="card-actions">
+                                <button class="action-btn complete" onclick="completeRequest('${req.id}')">
+                                    ✓ Tamamla
+                                </button>
+                                <button class="action-btn delete" onclick="deleteRequest('${req.id}')">
+                                    🗑️
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="card-actions">
+                                <button class="action-btn delete" onclick="deleteRequest('${req.id}')" style="flex: 1;">
+                                    🗑️ Sil
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Gerçek zamanlı dinleme
+        const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => {
+            allRequests = [];
+            snapshot.forEach((doc) => {
+                allRequests.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            renderRequests();
+        }, (error) => {
+            console.error('Firebase dinleme hatası:', error);
+            document.getElementById('loading').textContent = '⚠️ Bağlantı hatası. Sayfayı yenileyin.';
+        });
+
+        // Filtre butonları
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderRequests();
+            });
+        });
+
+        // Ses toggle
+        document.getElementById('soundToggle').addEventListener('change', (e) => {
+            soundEnabled = e.target.checked;
+        });
+
+        // Otomatik yenileme için timer
+        setInterval(() => {
+            if (allRequests.length > 0) {
+                renderRequests();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

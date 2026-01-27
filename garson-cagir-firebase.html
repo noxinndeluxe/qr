@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garson Çağır - Restoran Sistemi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .masa-info {
+            background: #f8f9ff;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 25px;
+            border: 2px solid #667eea;
+        }
+
+        .masa-info .label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .masa-info .masa-no {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .button-group {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            padding: 18px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .emoji {
+            font-size: 24px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        .notification.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .notification.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .notification-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status-panel {
+            background: #fff9e6;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .status-panel.active {
+            display: block;
+        }
+
+        .status-panel h3 {
+            color: #d97706;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .status-panel p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ Hoş Geldiniz</h1>
+            <p>Size nasıl yardımcı olabiliriz?</p>
+        </div>
+
+        <div class="content">
+            <div class="masa-info">
+                <div class="label">Masa Numaranız</div>
+                <div class="masa-no" id="masaNo">12</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="garsonCagir()">
+                    <span class="emoji">👨‍🍳</span>
+                    <span>Garson Çağır</span>
+                </button>
+
+                <button class="btn btn-secondary" onclick="hesapIste()">
+                    <span class="emoji">💳</span>
+                    <span>Hesap İste</span>
+                </button>
+
+                <button class="btn btn-secondary" onclick="yardimIste()">
+                    <span class="emoji">❓</span>
+                    <span>Yardım İste</span>
+                </button>
+            </div>
+
+            <div class="status-panel" id="statusPanel">
+                <h3>⏱️ Talebiniz Alındı</h3>
+                <p id="statusText">Garsonumuz en kısa sürede masanıza gelecektir.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <div class="notification-title" id="notificationTitle"></div>
+        <div class="notification-text" id="notificationText"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase yapılandırması
+        const firebaseConfig = {
+            apiKey: "AIzaSyAayB7410stMdKXgebXlQ2sSe08cy48SI0",
+            authDomain: "noxinn-qr.firebaseapp.com",
+            projectId: "noxinn-qr",
+            storageBucket: "noxinn-qr.firebasestorage.app",
+            messagingSenderId: "757343265554",
+            appId: "1:757343265554:web:b37008a2ab2a87adfbec9cb"
+        };
+
+        // Firebase başlat
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // URL'den masa numarasını al
+        const urlParams = new URLSearchParams(window.location.search);
+        const masaNumarasi = urlParams.get('masa') || '12';
+        document.getElementById('masaNo').textContent = masaNumarasi;
+
+        function showNotification(title, text, type = 'success') {
+            const notification = document.getElementById('notification');
+            document.getElementById('notificationTitle').textContent = title;
+            document.getElementById('notificationText').textContent = text;
+            notification.className = 'notification show ' + type;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        function showStatus(text) {
+            const panel = document.getElementById('statusPanel');
+            document.getElementById('statusText').textContent = text;
+            panel.classList.add('active');
+
+            setTimeout(() => {
+                panel.classList.remove('active');
+            }, 10000);
+        }
+
+        async function addRequest(type, emoji) {
+            try {
+                await addDoc(collection(db, "requests"), {
+                    masa: masaNumarasi,
+                    type: type,
+                    emoji: emoji,
+                    status: 'pending',
+                    timestamp: serverTimestamp(),
+                    createdAt: new Date().toISOString()
+                });
+                console.log('✅ Talep Firebase\'e eklendi');
+            } catch (error) {
+                console.error('❌ Firebase hatası:', error);
+                showNotification('⚠️ Hata', 'Bağlantı sorunu. Lütfen tekrar deneyin.', 'info');
+            }
+        }
+
+        window.garsonCagir = async function() {
+            await addRequest('Garson', '👨‍🍳');
+            showNotification(
+                '✅ Garson Çağrıldı!',
+                `Masa ${masaNumarasi} - Garsonumuz yolda!`,
+                'success'
+            );
+            showStatus('Garsonumuz en kısa sürede masanıza gelecektir. Ortalama bekleme süresi: 2-3 dakika.');
+        }
+
+        window.hesapIste = async function() {
+            await addRequest('Hesap', '💳');
+            showNotification(
+                '💳 Hesap Talebi Alındı',
+                `Masa ${masaNumarasi} - Hesabınız hazırlanıyor`,
+                'info'
+            );
+            showStatus('Hesabınız hazırlanıyor. Garsonumuz kısa süre içinde hesabınızı getirecektir.');
+        }
+
+        window.yardimIste = async function() {
+            await addRequest('Yardım', '❓');
+            showNotification(
+                '❓ Yardım Talebi',
+                `Masa ${masaNumarasi} - Personelimiz yardıma geliyor`,
+                'info'
+            );
+            showStatus('Yardım talebiniz alındı. Personelimiz en kısa sürede sizinle ilgilenecektir.');
+        }
+    </script>
+</body>
+</html>
