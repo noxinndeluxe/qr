@@ -298,25 +298,7 @@
             showStatus('Garsonumuz en kısa sürede masanıza gelecektir. Ortalama bekleme süresi: 2-3 dakika.');
         }
 
-        window.hesapIste = async function() {
-            await addRequest('Hesap', '💳');
-            showNotification(
-                '💳 Hesap Talebi Alındı',
-                `Masa ${masaNumarasi} - Hesabınız hazırlanıyor`,
-                'info'
-            );
-            showStatus('Hesabınız hazırlanıyor. Garsonumuz kısa süre içinde hesabınızı getirecektir.');
-        }
-
-        window.yardimIste = async function() {
-            await addRequest('Yardım', '❓');
-            showNotification(
-                '❓ Yardım Talebi',
-                `Masa ${masaNumarasi} - Personelimiz yardıma geliyor`,
-                'info'
-            );
-            showStatus('Yardım talebiniz alındı. Personelimiz en kısa sürede sizinle ilgilenecektir.');
-        }
+    
     </script>
 </body>
 </html>
