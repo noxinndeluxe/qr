@@ -101,12 +101,19 @@
             cursor: pointer;
             transition: all 0.2s ease;
             color: #ddd;
+            filter: grayscale(100%);
         }
 
-        .star:hover,
-        .star.active {
+        .star:hover {
             color: #fbbf24;
             transform: scale(1.1);
+            filter: grayscale(0%);
+        }
+
+        .star.active {
+            color: #fbbf24;
+            transform: scale(1.05);
+            filter: grayscale(0%);
         }
 
         .comment-box {
@@ -255,11 +262,11 @@
                         <span>Genel Memnuniyetiniz</span>
                     </div>
                     <div class="star-rating" data-rating="overall">
-                        <span class="star" data-value="1">⭐</span>
-                        <span class="star" data-value="2">⭐</span>
-                        <span class="star" data-value="3">⭐</span>
-                        <span class="star" data-value="4">⭐</span>
-                        <span class="star" data-value="5">⭐</span>
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
                     </div>
                 </div>
 
@@ -270,11 +277,11 @@
                         <span>Oda Temizliği</span>
                     </div>
                     <div class="star-rating" data-rating="cleanliness">
-                        <span class="star" data-value="1">⭐</span>
-                        <span class="star" data-value="2">⭐</span>
-                        <span class="star" data-value="3">⭐</span>
-                        <span class="star" data-value="4">⭐</span>
-                        <span class="star" data-value="5">⭐</span>
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
                     </div>
                 </div>
 
@@ -285,11 +292,11 @@
                         <span>Yemek ve Kahvaltı</span>
                     </div>
                     <div class="star-rating" data-rating="food">
-                        <span class="star" data-value="1">⭐</span>
-                        <span class="star" data-value="2">⭐</span>
-                        <span class="star" data-value="3">⭐</span>
-                        <span class="star" data-value="4">⭐</span>
-                        <span class="star" data-value="5">⭐</span>
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
                     </div>
                 </div>
 
@@ -300,11 +307,11 @@
                         <span>Personel İlgisi</span>
                     </div>
                     <div class="star-rating" data-rating="staff">
-                        <span class="star" data-value="1">⭐</span>
-                        <span class="star" data-value="2">⭐</span>
-                        <span class="star" data-value="3">⭐</span>
-                        <span class="star" data-value="4">⭐</span>
-                        <span class="star" data-value="5">⭐</span>
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
                     </div>
                 </div>
 
@@ -315,11 +322,11 @@
                         <span>Konfor ve Rahatlık</span>
                     </div>
                     <div class="star-rating" data-rating="comfort">
-                        <span class="star" data-value="1">⭐</span>
-                        <span class="star" data-value="2">⭐</span>
-                        <span class="star" data-value="3">⭐</span>
-                        <span class="star" data-value="4">⭐</span>
-                        <span class="star" data-value="5">⭐</span>
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
                     </div>
                 </div>
 
@@ -330,11 +337,11 @@
                         <span>Fiyat / Performans</span>
                     </div>
                     <div class="star-rating" data-rating="value">
-                        <span class="star" data-value="1">⭐</span>
-                        <span class="star" data-value="2">⭐</span>
-                        <span class="star" data-value="3">⭐</span>
-                        <span class="star" data-value="4">⭐</span>
-                        <span class="star" data-value="5">⭐</span>
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
                     </div>
                 </div>
 
@@ -407,8 +414,10 @@
                     stars.forEach((s, index) => {
                         if (index < value) {
                             s.classList.add('active');
+                            s.textContent = '⭐'; // Dolu yıldız
                         } else {
                             s.classList.remove('active');
+                            s.textContent = '☆'; // Boş yıldız
                         }
                     });
                 });
