@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anket Sonuçları - Yönetim Paneli</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #1e3c72;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .stat-card.warning .value {
+            color: #f59e0b;
+        }
+
+        .stat-card.danger .value {
+            color: #ef4444;
+        }
+
+        .stat-card.success .value {
+            color: #10b981;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active {
+            background: #1e3c72;
+            color: white;
+            border-color: #1e3c72;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .surveys-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .survey-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .survey-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+        }
+
+        .survey-card.excellent::before {
+            background: #10b981;
+        }
+
+        .survey-card.good::before {
+            background: #3b82f6;
+        }
+
+        .survey-card.average::before {
+            background: #f59e0b;
+        }
+
+        .survey-card.poor::before {
+            background: #ef4444;
+        }
+
+        .survey-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .room-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .date-badge {
+            background: #f3f4f6;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .ratings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .rating-item {
+            text-align: center;
+        }
+
+        .rating-item .icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .rating-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .rating-item .stars {
+            font-size: 18px;
+            color: #fbbf24;
+        }
+
+        .comments-section {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .comments-section h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .comments-section p {
+            color: #333;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 16px;
+            padding: 60px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .empty-state .emoji {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .alert-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .alert-badge.warning {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .alert-badge.danger {
+            background: #fee2e2;
+            color: #dc2626;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @media (max-width: 768px) {
+            .surveys-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ratings-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">🔄 Veriler yükleniyor...</div>
+
+    <div id="mainContent" style="display: none;">
+        <div class="header">
+            <h1>📊 Misafir Anket Sonuçları</h1>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Toplam Anket</div>
+                    <div class="value" id="totalSurveys">0</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="label">Ortalama Puan</div>
+                    <div class="value" id="avgRating">0.0</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="label">Düşük Puan (≤3)</div>
+                    <div class="value" id="lowRatings">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Bugün</div>
+                    <div class="value" id="todaySurveys">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div style="display: flex; gap: 10px;">
+                <button class="filter-btn active" data-filter="all">Tümü</button>
+                <button class="filter-btn" data-filter="poor">Düşük Puanlar (≤3)</button>
+                <button class="filter-btn" data-filter="excellent">Yüksek Puanlar (≥4)</button>
+            </div>
+        </div>
+
+        <div class="surveys-grid" id="surveysGrid"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        const supabase = createClient(
+            'https://hxjpzgqrylmcwabkfnqc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4anB6Z3FyeWxtY3dhYmtmbnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Nzk1ODksImV4cCI6MjA4NTE1NTU4OX0.YwQUuliCuxl4yc_Wqbt7UA79QYD1wxl-bmK4h1xG6Rc'
+        )
+
+        let allSurveys = [];
+        let currentFilter = 'all';
+
+        async function loadSurveys() {
+            try {
+                const { data, error } = await supabase
+                    .from('surveys')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allSurveys = data;
+                updateStats();
+                renderSurveys();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+
+            } catch (error) {
+                console.error('Hata:', error);
+                document.getElementById('loading').textContent = '⚠️ Veri yüklenemedi. Sayfayı yenileyin.';
+            }
+        }
+
+        function updateStats() {
+            const total = allSurveys.length;
+            const avgRating = total > 0 
+                ? (allSurveys.reduce((sum, s) => sum + (s.overall_rating || 0), 0) / total).toFixed(1)
+                : 0;
+            const lowRatings = allSurveys.filter(s => (s.overall_rating || 0) <= 3).length;
+            
+            const today = new Date().toDateString();
+            const todaySurveys = allSurveys.filter(s => 
+                new Date(s.created_at).toDateString() === today
+            ).length;
+
+            document.getElementById('totalSurveys').textContent = total;
+            document.getElementById('avgRating').textContent = avgRating;
+            document.getElementById('lowRatings').textContent = lowRatings;
+            document.getElementById('todaySurveys').textContent = todaySurveys;
+        }
+
+        function renderSurveys() {
+            const grid = document.getElementById('surveysGrid');
+            
+            let filtered = allSurveys;
+            if (currentFilter === 'poor') {
+                filtered = allSurveys.filter(s => (s.overall_rating || 0) <= 3);
+            } else if (currentFilter === 'excellent') {
+                filtered = allSurveys.filter(s => (s.overall_rating || 0) >= 4);
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="emoji">📭</div>
+                        <h2>Henüz anket yok</h2>
+                        <p>Misafirleriniz anket doldurmaya başladığında burada görünecek</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(survey => {
+                const rating = survey.overall_rating || 0;
+                const cardClass = rating >= 4 ? 'excellent' : rating === 3 ? 'average' : 'poor';
+                const date = new Date(survey.created_at);
+                const dateStr = date.toLocaleDateString('tr-TR');
+                const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+                const alertBadge = rating <= 3 
+                    ? `<span class="alert-badge ${rating <= 2 ? 'danger' : 'warning'}">⚠️ DİKKAT</span>`
+                    : '';
+
+                const stars = (count) => '⭐'.repeat(count || 0) + '☆'.repeat(5 - (count || 0));
+
+                return `
+                    <div class="survey-card ${cardClass}">
+                        <div class="survey-header">
+                            <div>
+                                <div class="room-badge">Oda ${survey.room_number}</div>
+                                ${alertBadge}
+                            </div>
+                            <div class="date-badge">${dateStr} - ${timeStr}</div>
+                        </div>
+
+                        <div class="ratings-grid">
+                            <div class="rating-item">
+                                <div class="icon">⭐</div>
+                                <div class="label">Genel</div>
+                                <div class="stars">${stars(survey.overall_rating)}</div>
+                            </div>
+                            <div class="rating-item">
+                                <div class="icon">🧹</div>
+                                <div class="label">Temizlik</div>
+                                <div class="stars">${stars(survey.cleanliness_rating)}</div>
+                            </div>
+                            <div class="rating-item">
+                                <div class="icon">🍽️</div>
+                                <div class="label">Yemek</div>
+                                <div class="stars">${stars(survey.food_rating)}</div>
+                            </div>
+                            <div class="rating-item">
+                                <div class="icon">👥</div>
+                                <div class="label">Personel</div>
+                                <div class="stars">${stars(survey.staff_rating)}</div>
+                            </div>
+                            <div class="rating-item">
+                                <div class="icon">🛏️</div>
+                                <div class="label">Konfor</div>
+                                <div class="stars">${stars(survey.comfort_rating)}</div>
+                            </div>
+                            <div class="rating-item">
+                                <div class="icon">💰</div>
+                                <div class="label">Fiyat/Performans</div>
+                                <div class="stars">${stars(survey.value_rating)}</div>
+                            </div>
+                        </div>
+
+                        ${survey.comments ? `
+                            <div class="comments-section">
+                                <h4>📝 Yorumlar:</h4>
+                                <p>${survey.comments}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filtre butonları
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderSurveys();
+            });
+        });
+
+        // Gerçek zamanlı güncelleme
+        supabase
+            .channel('surveys-channel')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'surveys' }, payload => {
+                console.log('Yeni anket!', payload);
+                allSurveys.unshift(payload.new);
+                updateStats();
+                renderSurveys();
+            })
+            .subscribe();
+
+        // İlk yükleme
+        loadSurveys();
+
+        // Otomatik yenileme (her 30 saniyede)
+        setInterval(loadSurveys, 30000);
+    </script>
+</body>
+</html>
