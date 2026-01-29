@@ -61,15 +61,29 @@
         }
 
         .room-info .label {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 5px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
         }
 
-        .room-info .room-no {
-            font-size: 36px;
-            font-weight: bold;
-            color: #667eea;
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: #999;
         }
 
         .question {
@@ -249,8 +263,37 @@
         <div class="content">
             <div id="surveyForm">
                 <div class="room-info">
-                    <div class="label">Oda Numaranız</div>
-                    <div class="room-no" id="roomNo">101</div>
+                    <div class="label">Lütfen Bilgilerinizi Girin</div>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+
+                <!-- Oda Numarası Input -->
+                <div class="question">
+                    <div class="question-title">
+                        <span class="question-icon">🚪</span>
+                        <span>Oda Numaranız</span>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="roomNumber" 
+                        class="input-field" 
+                        placeholder="Örn: 101, 205..." 
+                        required>
+                </div>
+
+                <!-- Email Input -->
+                <div class="question">
+                    <div class="question-title">
+                        <span class="question-icon">📧</span>
+                        <span>E-posta Adresiniz</span>
+                    </div>
+                    <input 
+                        type="email" 
+                        id="emailAddress" 
+                        class="input-field" 
+                        placeholder="ornek@email.com" 
+                        required>
                 </div>
 
                 <div class="error-message" id="errorMessage"></div>
@@ -385,10 +428,12 @@
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4anB6Z3FyeWxtY3dhYmtmbnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Nzk1ODksImV4cCI6MjA4NTE1NTU4OX0.YwQUuliCuxl4yc_Wqbt7UA79QYD1wxl-bmK4h1xG6Rc'
         )
 
-        // URL'den oda numarasını al
+        // URL'den oda numarasını al (varsa otomatik doldur)
         const urlParams = new URLSearchParams(window.location.search);
-        const roomNumber = decodeURIComponent(urlParams.get('oda') || '101');
-        document.getElementById('roomNo').textContent = roomNumber;
+        const urlRoomNumber = decodeURIComponent(urlParams.get('oda') || '');
+        if (urlRoomNumber) {
+            document.getElementById('roomNumber').value = urlRoomNumber;
+        }
 
         // Puanları sakla
         const ratings = {
@@ -426,7 +471,30 @@
 
         // Anket gönder
         window.submitSurvey = async function() {
+            const roomNumber = document.getElementById('roomNumber').value.trim();
+            const email = document.getElementById('emailAddress').value.trim();
+
             // Kontroller
+            if (!roomNumber) {
+                showError('Lütfen oda numaranızı girin!');
+                document.getElementById('roomNumber').focus();
+                return;
+            }
+
+            if (!email) {
+                showError('Lütfen e-posta adresinizi girin!');
+                document.getElementById('emailAddress').focus();
+                return;
+            }
+
+            // Email formatı kontrolü
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('Lütfen geçerli bir e-posta adresi girin!');
+                document.getElementById('emailAddress').focus();
+                return;
+            }
+
             if (ratings.overall === 0) {
                 showError('Lütfen en az genel memnuniyet puanını verin!');
                 return;
@@ -446,6 +514,7 @@
                     .insert([
                         {
                             room_number: roomNumber,
+                            email: email,
                             overall_rating: ratings.overall,
                             cleanliness_rating: ratings.cleanliness || null,
                             food_rating: ratings.food || null,
