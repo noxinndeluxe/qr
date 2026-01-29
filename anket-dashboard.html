@@ -313,10 +313,19 @@
         </div>
 
         <div class="controls">
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="filter-btn active" data-filter="all">Tümü</button>
                 <button class="filter-btn" data-filter="poor">Düşük Puanlar (≤3)</button>
                 <button class="filter-btn" data-filter="excellent">Yüksek Puanlar (≥4)</button>
+            </div>
+            
+            <div style="border-left: 2px solid #e0e0e0; height: 30px; margin: 0 10px;"></div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="filter-btn" data-date="today">Bugün</button>
+                <button class="filter-btn" data-date="yesterday">Dün</button>
+                <button class="filter-btn" data-date="week">Bu Hafta</button>
+                <button class="filter-btn" data-date="month">Bu Ay</button>
             </div>
         </div>
 
@@ -333,6 +342,7 @@
 
         let allSurveys = [];
         let currentFilter = 'all';
+        let currentDateFilter = 'all';
 
         async function loadSurveys() {
             try {
@@ -374,9 +384,45 @@
             document.getElementById('todaySurveys').textContent = todaySurveys;
         }
 
+        function filterByDate(surveys, dateFilter) {
+            if (dateFilter === 'all') return surveys;
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            return surveys.filter(survey => {
+                const surveyDate = new Date(survey.created_at);
+                const surveyDay = new Date(surveyDate.getFullYear(), surveyDate.getMonth(), surveyDate.getDate());
+                
+                switch(dateFilter) {
+                    case 'today':
+                        return surveyDay.getTime() === today.getTime();
+                    
+                    case 'yesterday':
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        return surveyDay.getTime() === yesterday.getTime();
+                    
+                    case 'week':
+                        const weekAgo = new Date(today);
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        return surveyDay >= weekAgo;
+                    
+                    case 'month':
+                        const monthAgo = new Date(today);
+                        monthAgo.setMonth(monthAgo.getMonth() - 1);
+                        return surveyDay >= monthAgo;
+                    
+                    default:
+                        return true;
+                }
+            });
+        }
+
         function renderSurveys() {
             const grid = document.getElementById('surveysGrid');
             
+            // Önce puan filtresini uygula
             let filtered = allSurveys;
             if (currentFilter === 'poor') {
                 filtered = allSurveys.filter(s => (s.overall_rating || 0) <= 3);
@@ -384,93 +430,153 @@
                 filtered = allSurveys.filter(s => (s.overall_rating || 0) >= 4);
             }
 
+            // Sonra tarih filtresini uygula
+            filtered = filterByDate(filtered, currentDateFilter);
+
             if (filtered.length === 0) {
                 grid.innerHTML = `
                     <div class="empty-state">
                         <div class="emoji">📭</div>
-                        <h2>Henüz anket yok</h2>
-                        <p>Misafirleriniz anket doldurmaya başladığında burada görünecek</p>
+                        <h2>Anket bulunamadı</h2>
+                        <p>Bu kriterlere uygun anket bulunmuyor</p>
                     </div>
                 `;
                 return;
             }
 
-            grid.innerHTML = filtered.map(survey => {
-                const rating = survey.overall_rating || 0;
-                const cardClass = rating >= 4 ? 'excellent' : rating === 3 ? 'average' : 'poor';
+            // Tarihe göre grupla
+            const groupedByDate = {};
+            filtered.forEach(survey => {
                 const date = new Date(survey.created_at);
-                const dateStr = date.toLocaleDateString('tr-TR');
-                const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                const dateKey = date.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                
+                if (!groupedByDate[dateKey]) {
+                    groupedByDate[dateKey] = [];
+                }
+                groupedByDate[dateKey].push(survey);
+            });
 
-                const alertBadge = rating <= 3 
-                    ? `<span class="alert-badge ${rating <= 2 ? 'danger' : 'warning'}">⚠️ DİKKAT</span>`
-                    : '';
+            // Tarihleri sırala (en yeni önce)
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+                const dateA = groupedByDate[a][0].created_at;
+                const dateB = groupedByDate[b][0].created_at;
+                return new Date(dateB) - new Date(dateA);
+            });
 
-                const stars = (count) => '⭐'.repeat(count || 0) + '☆'.repeat(5 - (count || 0));
+            grid.innerHTML = sortedDates.map(dateKey => {
+                const surveys = groupedByDate[dateKey];
+                const surveyCount = surveys.length;
+                const avgRating = (surveys.reduce((sum, s) => sum + (s.overall_rating || 0), 0) / surveyCount).toFixed(1);
+
+                const surveysHTML = surveys.map(survey => {
+                    const rating = survey.overall_rating || 0;
+                    const cardClass = rating >= 4 ? 'excellent' : rating === 3 ? 'average' : 'poor';
+                    const date = new Date(survey.created_at);
+                    const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+                    const alertBadge = rating <= 3 
+                        ? `<span class="alert-badge ${rating <= 2 ? 'danger' : 'warning'}">⚠️ DİKKAT</span>`
+                        : '';
+
+                    const stars = (count) => '⭐'.repeat(count || 0) + '☆'.repeat(5 - (count || 0));
+
+                    return `
+                        <div class="survey-card ${cardClass}">
+                            <div class="survey-header">
+                                <div>
+                                    <div class="room-badge">Oda ${survey.room_number}</div>
+                                    ${alertBadge}
+                                </div>
+                                <div>
+                                    <div class="date-badge">${timeStr}</div>
+                                    ${survey.email ? `<div class="date-badge" style="margin-top: 5px;">📧 ${survey.email}</div>` : ''}
+                                </div>
+                            </div>
+
+                            <div class="ratings-grid">
+                                <div class="rating-item">
+                                    <div class="icon">⭐</div>
+                                    <div class="label">Genel</div>
+                                    <div class="stars">${stars(survey.overall_rating)}</div>
+                                </div>
+                                <div class="rating-item">
+                                    <div class="icon">🧹</div>
+                                    <div class="label">Temizlik</div>
+                                    <div class="stars">${stars(survey.cleanliness_rating)}</div>
+                                </div>
+                                <div class="rating-item">
+                                    <div class="icon">🍽️</div>
+                                    <div class="label">Yemek</div>
+                                    <div class="stars">${stars(survey.food_rating)}</div>
+                                </div>
+                                <div class="rating-item">
+                                    <div class="icon">👥</div>
+                                    <div class="label">Personel</div>
+                                    <div class="stars">${stars(survey.staff_rating)}</div>
+                                </div>
+                                <div class="rating-item">
+                                    <div class="icon">🛏️</div>
+                                    <div class="label">Konfor</div>
+                                    <div class="stars">${stars(survey.comfort_rating)}</div>
+                                </div>
+                                <div class="rating-item">
+                                    <div class="icon">💰</div>
+                                    <div class="label">Fiyat/Performans</div>
+                                    <div class="stars">${stars(survey.value_rating)}</div>
+                                </div>
+                            </div>
+
+                            ${survey.comments ? `
+                                <div class="comments-section">
+                                    <h4>📝 Yorumlar:</h4>
+                                    <p>${survey.comments}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
 
                 return `
-                    <div class="survey-card ${cardClass}">
-                        <div class="survey-header">
-                            <div>
-                                <div class="room-badge">Oda ${survey.room_number}</div>
-                                ${alertBadge}
-                            </div>
-                            <div>
-                                <div class="date-badge">${dateStr} - ${timeStr}</div>
-                                ${survey.email ? `<div class="date-badge" style="margin-top: 5px;">📧 ${survey.email}</div>` : ''}
-                            </div>
-                        </div>
-
-                        <div class="ratings-grid">
-                            <div class="rating-item">
-                                <div class="icon">⭐</div>
-                                <div class="label">Genel</div>
-                                <div class="stars">${stars(survey.overall_rating)}</div>
-                            </div>
-                            <div class="rating-item">
-                                <div class="icon">🧹</div>
-                                <div class="label">Temizlik</div>
-                                <div class="stars">${stars(survey.cleanliness_rating)}</div>
-                            </div>
-                            <div class="rating-item">
-                                <div class="icon">🍽️</div>
-                                <div class="label">Yemek</div>
-                                <div class="stars">${stars(survey.food_rating)}</div>
-                            </div>
-                            <div class="rating-item">
-                                <div class="icon">👥</div>
-                                <div class="label">Personel</div>
-                                <div class="stars">${stars(survey.staff_rating)}</div>
-                            </div>
-                            <div class="rating-item">
-                                <div class="icon">🛏️</div>
-                                <div class="label">Konfor</div>
-                                <div class="stars">${stars(survey.comfort_rating)}</div>
-                            </div>
-                            <div class="rating-item">
-                                <div class="icon">💰</div>
-                                <div class="label">Fiyat/Performans</div>
-                                <div class="stars">${stars(survey.value_rating)}</div>
+                    <div style="margin-bottom: 30px;">
+                        <div style="background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                            <h2 style="color: #1e3c72; font-size: 20px; margin: 0;">
+                                📅 ${dateKey}
+                            </h2>
+                            <div style="display: flex; gap: 20px; align-items: center;">
+                                <span style="background: #f3f4f6; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;">
+                                    ${surveyCount} Anket
+                                </span>
+                                <span style="background: #fef3c7; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; color: #d97706;">
+                                    ⭐ Ort: ${avgRating}
+                                </span>
                             </div>
                         </div>
-
-                        ${survey.comments ? `
-                            <div class="comments-section">
-                                <h4>📝 Yorumlar:</h4>
-                                <p>${survey.comments}</p>
-                            </div>
-                        ` : ''}
+                        ${surveysHTML}
                     </div>
                 `;
             }).join('');
         }
 
         // Filtre butonları
-        document.querySelectorAll('.filter-btn').forEach(btn => {
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
+                renderSurveys();
+            });
+        });
+
+        // Tarih filtresi butonları
+        document.querySelectorAll('.filter-btn[data-date]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn[data-date]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDateFilter = btn.dataset.date;
                 renderSurveys();
             });
         });
