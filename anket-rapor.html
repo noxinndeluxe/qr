@@ -347,14 +347,14 @@
         )
 
         const DEPARTMENTS = [
-            'İçecekler ve Servis',
-            'Yiyecekler',
-            'Temizlik',
-            'Resepsiyon',
-            'Teknik Servis',
-            'Güvenlik',
-            'Bir daha gelir misiniz?',
-            'Bizi tavsiye eder misiniz?'
+            { key: 'dept_beverages_service', name: 'İçecekler ve Servis', icon: '🍹' },
+            { key: 'dept_food', name: 'Yiyecekler', icon: '🍽️' },
+            { key: 'dept_cleaning', name: 'Temizlik', icon: '🧹' },
+            { key: 'dept_reception', name: 'Resepsiyon', icon: '👥' },
+            { key: 'dept_technical', name: 'Teknik Servis', icon: '🔧' },
+            { key: 'dept_security', name: 'Güvenlik', icon: '🛡️' },
+            { key: 'dept_return', name: 'Bir daha gelir misiniz?', icon: '🔄' },
+            { key: 'dept_recommend', name: 'Bizi tavsiye eder misiniz?', icon: '⭐' }
         ];
 
         let allSurveys = [];
@@ -431,9 +431,31 @@
 
         function renderSummary(surveys, startDate, endDate) {
             const totalSurveys = surveys.length;
-            const avgOverall = (surveys.reduce((sum, s) => sum + (s.overall_rating || 0), 0) / totalSurveys).toFixed(1);
-            const excellentCount = surveys.filter(s => (s.overall_rating || 0) >= 4).length;
-            const poorCount = surveys.filter(s => (s.overall_rating || 0) <= 2).length;
+            
+            // Tüm departmanların ortalamasını hesapla
+            let totalRatings = 0;
+            let ratingCount = 0;
+            
+            surveys.forEach(survey => {
+                DEPARTMENTS.forEach(dept => {
+                    const rating = survey[dept.key];
+                    if (rating && rating > 0) {
+                        totalRatings += rating;
+                        ratingCount++;
+                    }
+                });
+            });
+            
+            const avgOverall = ratingCount > 0 ? (totalRatings / ratingCount).toFixed(1) : 0;
+            
+            // Mükemmel ve zayıf sayısını hesapla (herhangi bir departmanda)
+            const excellentCount = surveys.filter(s => {
+                return DEPARTMENTS.some(dept => (s[dept.key] || 0) >= 4);
+            }).length;
+            
+            const poorCount = surveys.filter(s => {
+                return DEPARTMENTS.some(dept => (s[dept.key] || 0) <= 2 && s[dept.key] > 0);
+            }).length;
             
             const dateRange = `${startDate.toLocaleDateString('tr-TR')} - ${endDate.toLocaleDateString('tr-TR')}`;
 
@@ -466,11 +488,12 @@
             
             const departmentData = DEPARTMENTS.map(dept => {
                 // Bu departman için değerlendirme yapılmış anketleri bul
-                const deptSurveys = surveys.filter(s => s.department === dept);
+                const deptSurveys = surveys.filter(s => s[dept.key] !== null && s[dept.key] > 0);
                 
                 if (deptSurveys.length === 0) {
                     return {
-                        name: dept,
+                        name: dept.name,
+                        icon: dept.icon,
                         count: 0,
                         avgRating: 0,
                         percentage: 0,
@@ -478,21 +501,22 @@
                     };
                 }
 
-                const totalRating = deptSurveys.reduce((sum, s) => sum + (s.overall_rating || 0), 0);
+                const totalRating = deptSurveys.reduce((sum, s) => sum + (s[dept.key] || 0), 0);
                 const avgRating = totalRating / deptSurveys.length;
                 const percentage = (avgRating / 5 * 100).toFixed(1);
 
                 // Yıldız dağılımı
                 const stars = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
                 deptSurveys.forEach(s => {
-                    const rating = s.overall_rating || 0;
+                    const rating = s[dept.key] || 0;
                     if (rating >= 1 && rating <= 5) {
                         stars[rating]++;
                     }
                 });
 
                 return {
-                    name: dept,
+                    name: dept.name,
+                    icon: dept.icon,
                     count: deptSurveys.length,
                     avgRating: avgRating.toFixed(1),
                     percentage: parseFloat(percentage),
@@ -510,7 +534,7 @@
                 return `
                     <div class="dept-card">
                         <div class="dept-header">
-                            <div class="dept-name">${dept.name}</div>
+                            <div class="dept-name">${dept.icon} ${dept.name}</div>
                             <div class="dept-score ${scoreClass}">%${dept.percentage}</div>
                         </div>
 

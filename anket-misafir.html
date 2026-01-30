@@ -28,27 +28,31 @@
             max-width: 600px;
             width: 100%;
             overflow: hidden;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px 30px;
+            padding: 30px;
             text-align: center;
             color: white;
         }
 
         .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+            font-size: 26px;
+            margin-bottom: 8px;
         }
 
         .header p {
-            font-size: 16px;
+            font-size: 15px;
             opacity: 0.9;
         }
 
         .content {
-            padding: 40px 30px;
+            padding: 30px;
+            overflow-y: auto;
         }
 
         .room-info {
@@ -56,22 +60,22 @@
             border-radius: 16px;
             padding: 20px;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             border: 2px solid #667eea;
         }
 
         .room-info .label {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #667eea;
         }
 
         .input-field {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 15px;
             font-family: inherit;
             transition: border-color 0.3s ease;
             background: white;
@@ -83,45 +87,32 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .input-field::placeholder {
-            color: #999;
-        }
-
-        select.input-field {
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            padding-right: 40px;
-        }
-
         .question {
-            margin-bottom: 35px;
+            margin-bottom: 30px;
         }
 
         .question-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .question-icon {
-            font-size: 24px;
+            font-size: 22px;
         }
 
         .star-rating {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
         }
 
         .star {
-            font-size: 40px;
+            font-size: 36px;
             cursor: pointer;
             transition: all 0.2s ease;
             color: #ddd;
@@ -142,10 +133,10 @@
 
         .comment-box {
             width: 100%;
-            min-height: 120px;
-            padding: 15px;
+            min-height: 100px;
+            padding: 12px;
             border: 2px solid #e0e0e0;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 14px;
             font-family: inherit;
             resize: vertical;
@@ -159,16 +150,16 @@
 
         .submit-btn {
             width: 100%;
-            padding: 18px;
+            padding: 16px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .submit-btn:hover {
@@ -193,19 +184,19 @@
         }
 
         .success-icon {
-            font-size: 80px;
-            margin-bottom: 20px;
+            font-size: 70px;
+            margin-bottom: 15px;
         }
 
         .success-message h2 {
             color: #10b981;
             margin-bottom: 10px;
-            font-size: 28px;
+            font-size: 24px;
         }
 
         .success-message p {
             color: #666;
-            font-size: 16px;
+            font-size: 15px;
             line-height: 1.6;
         }
 
@@ -213,34 +204,21 @@
             background: #fee2e2;
             border: 2px solid #ef4444;
             color: #dc2626;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
             display: none;
+            font-size: 14px;
         }
 
         .error-message.show {
             display: block;
         }
 
-        @media (max-width: 600px) {
-            .header h1 {
-                font-size: 24px;
-            }
-
-            .star {
-                font-size: 32px;
-            }
-
-            .content {
-                padding: 30px 20px;
-            }
-        }
-
         .loading {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 15px;
         }
 
         .loading.show {
@@ -248,11 +226,11 @@
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             animation: spin 1s linear infinite;
             margin: 0 auto;
         }
@@ -260,6 +238,24 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .star {
+                font-size: 30px;
+            }
+
+            .content {
+                padding: 25px 20px;
+            }
+        }
+
+        .info-section {
+            margin-bottom: 25px;
         }
     </style>
 </head>
@@ -278,62 +274,45 @@
 
                 <div class="error-message" id="errorMessage"></div>
 
-                <!-- Oda Numarası Input -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🚪</span>
-                        <span>Oda Numaranız</span>
+                <!-- Oda Numarası -->
+                <div class="info-section">
+                    <div class="question">
+                        <div class="question-title">
+                            <span class="question-icon">🚪</span>
+                            <span>Oda Numaranız</span>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="roomNumber" 
+                            class="input-field" 
+                            placeholder="Örn: 101, 205..." 
+                            required>
                     </div>
-                    <input 
-                        type="text" 
-                        id="roomNumber" 
-                        class="input-field" 
-                        placeholder="Örn: 101, 205..." 
-                        required>
+
+                    <!-- Email -->
+                    <div class="question">
+                        <div class="question-title">
+                            <span class="question-icon">📧</span>
+                            <span>E-posta Adresiniz</span>
+                        </div>
+                        <input 
+                            type="email" 
+                            id="emailAddress" 
+                            class="input-field" 
+                            placeholder="ornek@email.com" 
+                            required>
+                    </div>
                 </div>
 
-                <!-- Email Input -->
+                <!-- DEPARTMAN SORULARI -->
+                
+                <!-- 1. İçecekler ve Servis -->
                 <div class="question">
                     <div class="question-title">
-                        <span class="question-icon">📧</span>
-                        <span>E-posta Adresiniz</span>
+                        <span class="question-icon">🍹</span>
+                        <span>İçecekler ve Servis</span>
                     </div>
-                    <input 
-                        type="email" 
-                        id="emailAddress" 
-                        class="input-field" 
-                        placeholder="ornek@email.com" 
-                        required>
-                </div>
-
-                <!-- Departman Seçimi -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🏢</span>
-                        <span>Hangi departmanı değerlendiriyorsunuz?</span>
-                    </div>
-                    <select id="departmentSelect" class="input-field" required>
-                        <option value="">Departman seçin...</option>
-                        <option value="İçecekler ve Servis">İçecekler ve Servis</option>
-                        <option value="Yiyecekler">Yiyecekler</option>
-                        <option value="Temizlik">Temizlik</option>
-                        <option value="Resepsiyon">Resepsiyon</option>
-                        <option value="Teknik Servis">Teknik Servis</option>
-                        <option value="Güvenlik">Güvenlik</option>
-                        <option value="Bir daha gelir misiniz?">Bir daha gelir misiniz?</option>
-                        <option value="Bizi tavsiye eder misiniz?">Bizi tavsiye eder misiniz?</option>
-                    </select>
-                </div>
-
-                <div class="error-message" id="errorMessage"></div>
-
-                <!-- Soru 1: Genel Memnuniyet -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">⭐</span>
-                        <span>Genel Memnuniyetiniz</span>
-                    </div>
-                    <div class="star-rating" data-rating="overall">
+                    <div class="star-rating" data-dept="beverages_service">
                         <span class="star" data-value="1">☆</span>
                         <span class="star" data-value="2">☆</span>
                         <span class="star" data-value="3">☆</span>
@@ -342,28 +321,13 @@
                     </div>
                 </div>
 
-                <!-- Soru 2: Oda Temizliği -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🧹</span>
-                        <span>Oda Temizliği</span>
-                    </div>
-                    <div class="star-rating" data-rating="cleanliness">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- Soru 3: Yemek/Kahvaltı -->
+                <!-- 2. Yiyecekler -->
                 <div class="question">
                     <div class="question-title">
                         <span class="question-icon">🍽️</span>
-                        <span>Yemek ve Kahvaltı</span>
+                        <span>Yiyecekler</span>
                     </div>
-                    <div class="star-rating" data-rating="food">
+                    <div class="star-rating" data-dept="food">
                         <span class="star" data-value="1">☆</span>
                         <span class="star" data-value="2">☆</span>
                         <span class="star" data-value="3">☆</span>
@@ -372,13 +336,28 @@
                     </div>
                 </div>
 
-                <!-- Soru 4: Personel İlgisi -->
+                <!-- 3. Temizlik -->
+                <div class="question">
+                    <div class="question-title">
+                        <span class="question-icon">🧹</span>
+                        <span>Temizlik</span>
+                    </div>
+                    <div class="star-rating" data-dept="cleaning">
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
+                    </div>
+                </div>
+
+                <!-- 4. Resepsiyon -->
                 <div class="question">
                     <div class="question-title">
                         <span class="question-icon">👥</span>
-                        <span>Personel İlgisi</span>
+                        <span>Resepsiyon</span>
                     </div>
-                    <div class="star-rating" data-rating="staff">
+                    <div class="star-rating" data-dept="reception">
                         <span class="star" data-value="1">☆</span>
                         <span class="star" data-value="2">☆</span>
                         <span class="star" data-value="3">☆</span>
@@ -387,13 +366,13 @@
                     </div>
                 </div>
 
-                <!-- Soru 5: Konfor/Rahatlık -->
+                <!-- 5. Teknik Servis -->
                 <div class="question">
                     <div class="question-title">
-                        <span class="question-icon">🛏️</span>
-                        <span>Konfor ve Rahatlık</span>
+                        <span class="question-icon">🔧</span>
+                        <span>Teknik Servis</span>
                     </div>
-                    <div class="star-rating" data-rating="comfort">
+                    <div class="star-rating" data-dept="technical">
                         <span class="star" data-value="1">☆</span>
                         <span class="star" data-value="2">☆</span>
                         <span class="star" data-value="3">☆</span>
@@ -402,13 +381,13 @@
                     </div>
                 </div>
 
-                <!-- Soru 6: Fiyat/Performans -->
+                <!-- 6. Güvenlik -->
                 <div class="question">
                     <div class="question-title">
-                        <span class="question-icon">💰</span>
-                        <span>Fiyat / Performans</span>
+                        <span class="question-icon">🛡️</span>
+                        <span>Güvenlik</span>
                     </div>
-                    <div class="star-rating" data-rating="value">
+                    <div class="star-rating" data-dept="security">
                         <span class="star" data-value="1">☆</span>
                         <span class="star" data-value="2">☆</span>
                         <span class="star" data-value="3">☆</span>
@@ -417,7 +396,37 @@
                     </div>
                 </div>
 
-                <!-- Soru 7: Yorumlar -->
+                <!-- 7. Bir daha gelir misiniz? -->
+                <div class="question">
+                    <div class="question-title">
+                        <span class="question-icon">🔄</span>
+                        <span>Bir daha gelir misiniz?</span>
+                    </div>
+                    <div class="star-rating" data-dept="return">
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
+                    </div>
+                </div>
+
+                <!-- 8. Bizi tavsiye eder misiniz? -->
+                <div class="question">
+                    <div class="question-title">
+                        <span class="question-icon">⭐</span>
+                        <span>Bizi tavsiye eder misiniz?</span>
+                    </div>
+                    <div class="star-rating" data-dept="recommend">
+                        <span class="star" data-value="1">☆</span>
+                        <span class="star" data-value="2">☆</span>
+                        <span class="star" data-value="3">☆</span>
+                        <span class="star" data-value="4">☆</span>
+                        <span class="star" data-value="5">☆</span>
+                    </div>
+                </div>
+
+                <!-- Yorumlar -->
                 <div class="question">
                     <div class="question-title">
                         <span class="question-icon">📝</span>
@@ -431,7 +440,7 @@
 
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
-                    <p style="margin-top: 15px; color: #666;">Anketiniz gönderiliyor...</p>
+                    <p style="margin-top: 10px; color: #666; font-size: 14px;">Anketiniz gönderiliyor...</p>
                 </div>
 
                 <button class="submit-btn" id="submitBtn" onclick="submitSurvey()">
@@ -443,7 +452,7 @@
                 <div class="success-icon">✅</div>
                 <h2>Teşekkür Ederiz!</h2>
                 <p>Görüşleriniz bizim için çok değerli. Daha iyi bir hizmet sunabilmek için geri bildirimlerinizi dikkate alacağız.</p>
-                <p style="margin-top: 20px; font-weight: 600;">Keyifli konaklama dileriz! 🏨</p>
+                <p style="margin-top: 15px; font-weight: 600;">Keyifli konaklama dileriz! 🏨</p>
             </div>
         </div>
     </div>
@@ -451,7 +460,6 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-        // Supabase bağlantısı
         const supabase = createClient(
             'https://hxjpzgqrylmcwabkfnqc.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4anB6Z3FyeWxtY3dhYmtmbnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Nzk1ODksImV4cCI6MjA4NTE1NTU4OX0.YwQUuliCuxl4yc_Wqbt7UA79QYD1wxl-bmK4h1xG6Rc'
@@ -466,32 +474,34 @@
 
         // Puanları sakla
         const ratings = {
-            overall: 0,
-            cleanliness: 0,
+            beverages_service: 0,
             food: 0,
-            staff: 0,
-            comfort: 0,
-            value: 0
+            cleaning: 0,
+            reception: 0,
+            technical: 0,
+            security: 0,
+            return: 0,
+            recommend: 0
         };
 
         // Yıldız tıklama
         document.querySelectorAll('.star-rating').forEach(ratingContainer => {
-            const category = ratingContainer.dataset.rating;
+            const dept = ratingContainer.dataset.dept;
             const stars = ratingContainer.querySelectorAll('.star');
 
             stars.forEach(star => {
                 star.addEventListener('click', () => {
                     const value = parseInt(star.dataset.value);
-                    ratings[category] = value;
+                    ratings[dept] = value;
 
                     // Yıldızları güncelle
                     stars.forEach((s, index) => {
                         if (index < value) {
                             s.classList.add('active');
-                            s.textContent = '⭐'; // Dolu yıldız
+                            s.textContent = '⭐';
                         } else {
                             s.classList.remove('active');
-                            s.textContent = '☆'; // Boş yıldız
+                            s.textContent = '☆';
                         }
                     });
                 });
@@ -502,7 +512,6 @@
         window.submitSurvey = async function() {
             const roomNumber = document.getElementById('roomNumber').value.trim();
             const email = document.getElementById('emailAddress').value.trim();
-            const department = document.getElementById('departmentSelect').value;
 
             // Kontroller
             if (!roomNumber) {
@@ -525,14 +534,10 @@
                 return;
             }
 
-            if (!department) {
-                showError('Lütfen bir departman seçin!');
-                document.getElementById('departmentSelect').focus();
-                return;
-            }
-
-            if (ratings.overall === 0) {
-                showError('Lütfen en az genel memnuniyet puanını verin!');
+            // En az 1 departman puanlanmalı
+            const hasRating = Object.values(ratings).some(r => r > 0);
+            if (!hasRating) {
+                showError('Lütfen en az bir departmana puan verin!');
                 return;
             }
 
@@ -551,13 +556,14 @@
                         {
                             room_number: roomNumber,
                             email: email,
-                            department: department,
-                            overall_rating: ratings.overall,
-                            cleanliness_rating: ratings.cleanliness || null,
-                            food_rating: ratings.food || null,
-                            staff_rating: ratings.staff || null,
-                            comfort_rating: ratings.comfort || null,
-                            value_rating: ratings.value || null,
+                            dept_beverages_service: ratings.beverages_service || null,
+                            dept_food: ratings.food || null,
+                            dept_cleaning: ratings.cleaning || null,
+                            dept_reception: ratings.reception || null,
+                            dept_technical: ratings.technical || null,
+                            dept_security: ratings.security || null,
+                            dept_return: ratings.return || null,
+                            dept_recommend: ratings.recommend || null,
                             comments: document.getElementById('comments').value || null
                         }
                     ]);
@@ -581,6 +587,9 @@
             const errorMsg = document.getElementById('errorMessage');
             errorMsg.textContent = '⚠️ ' + message;
             errorMsg.classList.add('show');
+            
+            // Scroll to top
+            document.querySelector('.content').scrollTop = 0;
             
             setTimeout(() => {
                 errorMsg.classList.remove('show');
