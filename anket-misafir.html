@@ -74,6 +74,7 @@
             font-size: 16px;
             font-family: inherit;
             transition: border-color 0.3s ease;
+            background: white;
         }
 
         .input-field:focus {
@@ -84,6 +85,15 @@
 
         .input-field::placeholder {
             color: #999;
+        }
+
+        select.input-field {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 40px;
         }
 
         .question {
@@ -296,6 +306,25 @@
                         required>
                 </div>
 
+                <!-- Departman Seçimi -->
+                <div class="question">
+                    <div class="question-title">
+                        <span class="question-icon">🏢</span>
+                        <span>Hangi departmanı değerlendiriyorsunuz?</span>
+                    </div>
+                    <select id="departmentSelect" class="input-field" required>
+                        <option value="">Departman seçin...</option>
+                        <option value="İçecekler ve Servis">İçecekler ve Servis</option>
+                        <option value="Yiyecekler">Yiyecekler</option>
+                        <option value="Temizlik">Temizlik</option>
+                        <option value="Resepsiyon">Resepsiyon</option>
+                        <option value="Teknik Servis">Teknik Servis</option>
+                        <option value="Güvenlik">Güvenlik</option>
+                        <option value="Bir daha gelir misiniz?">Bir daha gelir misiniz?</option>
+                        <option value="Bizi tavsiye eder misiniz?">Bizi tavsiye eder misiniz?</option>
+                    </select>
+                </div>
+
                 <div class="error-message" id="errorMessage"></div>
 
                 <!-- Soru 1: Genel Memnuniyet -->
@@ -473,6 +502,7 @@
         window.submitSurvey = async function() {
             const roomNumber = document.getElementById('roomNumber').value.trim();
             const email = document.getElementById('emailAddress').value.trim();
+            const department = document.getElementById('departmentSelect').value;
 
             // Kontroller
             if (!roomNumber) {
@@ -492,6 +522,12 @@
             if (!emailRegex.test(email)) {
                 showError('Lütfen geçerli bir e-posta adresi girin!');
                 document.getElementById('emailAddress').focus();
+                return;
+            }
+
+            if (!department) {
+                showError('Lütfen bir departman seçin!');
+                document.getElementById('departmentSelect').focus();
                 return;
             }
 
@@ -515,6 +551,7 @@
                         {
                             room_number: roomNumber,
                             email: email,
+                            department: department,
                             overall_rating: ratings.overall,
                             cleanliness_rating: ratings.cleanliness || null,
                             food_rating: ratings.food || null,

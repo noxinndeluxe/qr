@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Departman Performans Raporu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #1e3c72;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .date-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        input[type="date"] {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input[type="date"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-card .label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .summary-card.success .value {
+            color: #10b981;
+        }
+
+        .summary-card.warning .value {
+            color: #f59e0b;
+        }
+
+        .summary-card.danger .value {
+            color: #ef4444;
+        }
+
+        .departments-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .dept-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .dept-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .dept-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .dept-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dept-score {
+            font-size: 48px;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 12px;
+        }
+
+        .dept-score.excellent {
+            color: #10b981;
+            background: #d1fae5;
+        }
+
+        .dept-score.danger {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .dept-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+
+        .detail-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .detail-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 16px;
+            padding: 60px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .empty-state .emoji {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .date-controls {
+                display: none;
+            }
+
+            .dept-card {
+                page-break-inside: avoid;
+                margin-bottom: 20px;
+            }
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 12px;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            gap: 10px;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            transition: all 0.3s ease;
+            min-width: 40px;
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            color: #1e3c72;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">🔄 Veriler yükleniyor...</div>
+
+    <div id="mainContent" style="display: none;">
+        <div class="header">
+            <h1>📊 Departman Performans Raporu</h1>
+            
+            <div class="date-controls">
+                <div class="control-group">
+                    <label>Başlangıç Tarihi</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="control-group">
+                    <label>Bitiş Tarihi</label>
+                    <input type="date" id="endDate">
+                </div>
+                <button class="btn btn-primary" onclick="generateReport()">
+                    📈 Rapor Oluştur
+                </button>
+                <button class="btn btn-primary" onclick="window.print()" style="background: #10b981;">
+                    🖨️ Yazdır
+                </button>
+            </div>
+        </div>
+
+        <div class="summary-cards" id="summaryCards"></div>
+
+        <div class="departments-grid" id="departmentsGrid"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        const supabase = createClient(
+            'https://hxjpzgqrylmcwabkfnqc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4anB6Z3FyeWxtY3dhYmtmbnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Nzk1ODksImV4cCI6MjA4NTE1NTU4OX0.YwQUuliCuxl4yc_Wqbt7UA79QYD1wxl-bmK4h1xG6Rc'
+        )
+
+        const DEPARTMENTS = [
+            'İçecekler ve Servis',
+            'Yiyecekler',
+            'Temizlik',
+            'Resepsiyon',
+            'Teknik Servis',
+            'Güvenlik',
+            'Bir daha gelir misiniz?',
+            'Bizi tavsiye eder misiniz?'
+        ];
+
+        let allSurveys = [];
+
+        // Bugün ve 30 gün öncesini varsayılan olarak ayarla
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        document.getElementById('startDate').valueAsDate = thirtyDaysAgo;
+        document.getElementById('endDate').valueAsDate = today;
+
+        async function loadData() {
+            try {
+                const { data, error } = await supabase
+                    .from('surveys')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allSurveys = data;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                
+                generateReport();
+
+            } catch (error) {
+                console.error('Hata:', error);
+                document.getElementById('loading').textContent = '⚠️ Veri yüklenemedi. Sayfayı yenileyin.';
+            }
+        }
+
+        window.generateReport = function() {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            endDate.setHours(23, 59, 59, 999); // Bitiş gününün sonuna kadar
+
+            if (!document.getElementById('startDate').value || !document.getElementById('endDate').value) {
+                alert('⚠️ Lütfen başlangıç ve bitiş tarihlerini seçin!');
+                return;
+            }
+
+            if (startDate > endDate) {
+                alert('⚠️ Başlangıç tarihi bitiş tarihinden sonra olamaz!');
+                return;
+            }
+
+            // Tarih aralığındaki anketleri filtrele
+            const filteredSurveys = allSurveys.filter(survey => {
+                const surveyDate = new Date(survey.created_at);
+                return surveyDate >= startDate && surveyDate <= endDate;
+            });
+
+            if (filteredSurveys.length === 0) {
+                document.getElementById('departmentsGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="emoji">📭</div>
+                        <h2>Bu tarih aralığında anket bulunamadı</h2>
+                        <p>Lütfen farklı bir tarih aralığı seçin</p>
+                    </div>
+                `;
+                document.getElementById('summaryCards').innerHTML = '';
+                return;
+            }
+
+            // Özet kartları oluştur
+            renderSummary(filteredSurveys, startDate, endDate);
+
+            // Departman raporlarını oluştur
+            renderDepartmentReports(filteredSurveys);
+        }
+
+        function renderSummary(surveys, startDate, endDate) {
+            const totalSurveys = surveys.length;
+            const avgOverall = (surveys.reduce((sum, s) => sum + (s.overall_rating || 0), 0) / totalSurveys).toFixed(1);
+            const excellentCount = surveys.filter(s => (s.overall_rating || 0) >= 4).length;
+            const poorCount = surveys.filter(s => (s.overall_rating || 0) <= 2).length;
+            
+            const dateRange = `${startDate.toLocaleDateString('tr-TR')} - ${endDate.toLocaleDateString('tr-TR')}`;
+
+            document.getElementById('summaryCards').innerHTML = `
+                <div class="summary-card">
+                    <div class="label">Tarih Aralığı</div>
+                    <div class="value" style="font-size: 16px; color: #666;">${dateRange}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="label">Toplam Anket</div>
+                    <div class="value">${totalSurveys}</div>
+                </div>
+                <div class="summary-card ${avgOverall >= 4 ? 'success' : avgOverall >= 3 ? 'warning' : 'danger'}">
+                    <div class="label">Genel Ortalama</div>
+                    <div class="value">⭐ ${avgOverall}</div>
+                </div>
+                <div class="summary-card success">
+                    <div class="label">Mükemmel (4-5⭐)</div>
+                    <div class="value">${excellentCount}</div>
+                </div>
+                <div class="summary-card danger">
+                    <div class="label">Zayıf (1-2⭐)</div>
+                    <div class="value">${poorCount}</div>
+                </div>
+            `;
+        }
+
+        function renderDepartmentReports(surveys) {
+            const grid = document.getElementById('departmentsGrid');
+            
+            const departmentData = DEPARTMENTS.map(dept => {
+                // Bu departman için değerlendirme yapılmış anketleri bul
+                const deptSurveys = surveys.filter(s => s.department === dept);
+                
+                if (deptSurveys.length === 0) {
+                    return {
+                        name: dept,
+                        count: 0,
+                        avgRating: 0,
+                        percentage: 0,
+                        stars: {}
+                    };
+                }
+
+                const totalRating = deptSurveys.reduce((sum, s) => sum + (s.overall_rating || 0), 0);
+                const avgRating = totalRating / deptSurveys.length;
+                const percentage = (avgRating / 5 * 100).toFixed(1);
+
+                // Yıldız dağılımı
+                const stars = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                deptSurveys.forEach(s => {
+                    const rating = s.overall_rating || 0;
+                    if (rating >= 1 && rating <= 5) {
+                        stars[rating]++;
+                    }
+                });
+
+                return {
+                    name: dept,
+                    count: deptSurveys.length,
+                    avgRating: avgRating.toFixed(1),
+                    percentage: parseFloat(percentage),
+                    stars: stars
+                };
+            });
+
+            // Performansa göre sırala (en yüksekten düşüğe)
+            departmentData.sort((a, b) => b.percentage - a.percentage);
+
+            grid.innerHTML = departmentData.map(dept => {
+                const scoreClass = dept.percentage >= 90 ? 'excellent' : 'danger';
+                const progressClass = dept.percentage >= 90 ? '' : 'danger';
+
+                return `
+                    <div class="dept-card">
+                        <div class="dept-header">
+                            <div class="dept-name">${dept.name}</div>
+                            <div class="dept-score ${scoreClass}">%${dept.percentage}</div>
+                        </div>
+
+                        ${dept.count > 0 ? `
+                            <div class="dept-details">
+                                <div class="detail-item">
+                                    <div class="label">Toplam Değerlendirme</div>
+                                    <div class="value">${dept.count}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">Ortalama Puan</div>
+                                    <div class="value">⭐ ${dept.avgRating}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">5 Yıldız</div>
+                                    <div class="value" style="color: #10b981;">${dept.stars[5]}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">4 Yıldız</div>
+                                    <div class="value" style="color: #3b82f6;">${dept.stars[4]}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">3 Yıldız</div>
+                                    <div class="value" style="color: #f59e0b;">${dept.stars[3]}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">1-2 Yıldız</div>
+                                    <div class="value" style="color: #ef4444;">${dept.stars[2] + dept.stars[1]}</div>
+                                </div>
+                            </div>
+
+                            <div class="progress-bar">
+                                <div class="progress-fill ${progressClass}" style="width: ${dept.percentage}%">
+                                    %${dept.percentage}
+                                </div>
+                            </div>
+                        ` : `
+                            <p style="text-align: center; color: #999; padding: 20px;">
+                                Bu tarih aralığında değerlendirme yok
+                            </p>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // İlk yükleme
+        loadData();
+    </script>
+</body>
+</html>
