@@ -314,6 +314,19 @@ input[type="date"]:focus{outline:none;border-color:#667eea}
         <!-- USERS -->
         <div id="users" class="page">
             <div class="page-header"><h2>👥 Kullanıcı Yönetimi</h2><p>Yönetici hesapları</p></div>
+            
+            <!-- Şifre Değiştir -->
+            <div class="add-user-form">
+                <h3>🔑 Şifremi Değiştir</h3>
+                <div class="form-row">
+                    <input type="password" id="oldPassword" placeholder="Mevcut şifre">
+                    <input type="password" id="newPasswordChange" placeholder="Yeni şifre">
+                    <input type="password" id="confirmPassword" placeholder="Yeni şifre (tekrar)">
+                    <button class="btn btn-primary" onclick="changePassword()">Değiştir</button>
+                </div>
+                <div class="login-error" id="changePassError" style="margin-top:12px"></div>
+            </div>
+
             <div class="add-user-form" id="addUserForm">
                 <h3>➕ Yeni Kullanıcı Ekle</h3>
                 <div class="form-row">
@@ -719,6 +732,80 @@ window.deleteUser = async function(id, name) {
         allUsers = allUsers.filter(u=>u.id!==id);
         renderUsers();
     } catch(e) { console.error(e); alert('Silme işlemi başarısız!'); }
+}
+
+window.changePassword = async function() {
+    const oldPass = document.getElementById('oldPassword').value;
+    const newPass = document.getElementById('newPasswordChange').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    const errEl   = document.getElementById('changePassError');
+
+    errEl.classList.remove('show');
+
+    if(!oldPass || !newPass || !confirm) {
+        errEl.textContent='⚠️ Tüm alanları doldurun!';
+        errEl.classList.add('show');
+        return;
+    }
+
+    if(newPass !== confirm) {
+        errEl.textContent='⚠️ Yeni şifreler eşleşmiyor!';
+        errEl.classList.add('show');
+        return;
+    }
+
+    if(newPass.length < 4) {
+        errEl.textContent='⚠️ Yeni şifre en az 4 karakter olmalı!';
+        errEl.classList.add('show');
+        return;
+    }
+
+    try {
+        // Önce eski şifreyi doğrula
+        const oldHash = await sha256(oldPass);
+        if(oldHash !== curUser.password_hash) {
+            errEl.textContent='⚠️ Mevcut şifre yanlış!';
+            errEl.classList.add('show');
+            return;
+        }
+
+        // Yeni şifreyi kaydet
+        const newHash = await sha256(newPass);
+        const { error } = await supabase
+            .from('users')
+            .update({ password_hash: newHash })
+            .eq('id', curUser.id);
+
+        if(error) throw error;
+
+        // Session güncelle
+        curUser.password_hash = newHash;
+        sessionStorage.setItem('hotel_user', JSON.stringify(curUser));
+
+        // Form temizle
+        document.getElementById('oldPassword').value = '';
+        document.getElementById('newPasswordChange').value = '';
+        document.getElementById('confirmPassword').value = '';
+
+        // Başarı mesajı
+        errEl.style.background = '#d1fae5';
+        errEl.style.color = '#059669';
+        errEl.style.borderColor = '#10b981';
+        errEl.textContent = '✅ Şifreniz başarıyla değiştirildi!';
+        errEl.classList.add('show');
+
+        setTimeout(() => {
+            errEl.classList.remove('show');
+            errEl.style.background = '#fee2e2';
+            errEl.style.color = '#dc2626';
+            errEl.style.borderColor = '#ef4444';
+        }, 3000);
+
+    } catch(e) {
+        console.error(e);
+        errEl.textContent='⚠️ Şifre değiştirilemedi!';
+        errEl.classList.add('show');
+    }
 }
 
 // ─── FILTER BUTTONS ───────────────────────────────────────────
