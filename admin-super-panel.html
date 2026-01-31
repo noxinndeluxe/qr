@@ -378,6 +378,31 @@ async function showPanel(){
 
 window.logout=function(){sessionStorage.removeItem('hotel_user');curUser=null;document.getElementById('panel').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('loginUser').value='';document.getElementById('loginPass').value=''}
 
+async function loadQuestions(){
+    try{
+        const{data,error}=await supabase
+            .from('survey_questions')
+            .select('*')
+            .eq('is_active',true)
+            .order('sort_order',{ascending:true});
+        if(error)throw error;
+        DEPTS=data.map(q=>({key:q.key,icon:q.icon,name:q.name_tr}));
+        console.log('✅ Sorular yüklendi:',DEPTS.length);
+    }catch(e){
+        console.error('❌ Soru yükleme hatası:',e);
+        DEPTS=[
+            {key:'dept_beverages_service',icon:'🍹',name:'İçecekler ve Servis'},
+            {key:'dept_food',icon:'🍽️',name:'Yiyecekler'},
+            {key:'dept_cleaning',icon:'🧹',name:'Temizlik'},
+            {key:'dept_reception',icon:'👥',name:'Resepsiyon'},
+            {key:'dept_technical',icon:'🔧',name:'Teknik Servis'},
+            {key:'dept_security',icon:'🛡️',name:'Güvenlik'},
+            {key:'dept_return',icon:'🔄',name:'Bir daha gelir misiniz?'},
+            {key:'dept_recommend',icon:'⭐',name:'Bizi tavsiye eder misiniz?'}
+        ];
+    }
+}
+
 async function loadData(){
     try{
         const[survRes,usrRes]=await Promise.all([
@@ -386,6 +411,7 @@ async function loadData(){
         ]);
         allSurveys=survRes.data||[];
         allUsers=usrRes.data||[];
+        await loadQuestions();
         updateDashboard();updateSurveysStats();renderSurveys();renderUsers();renderEmails();renderQuestions();
     }catch(e){console.error(e)}
 }
@@ -715,7 +741,7 @@ function renderQuestions(){
     </table>`;
 }
 
-window.addQuestion=function(){
+window.addQuestion=async function(){
     const key=document.getElementById('newQKey').value.trim();
     const icon=document.getElementById('newQIcon').value.trim();
     const name=document.getElementById('newQName').value.trim();
@@ -723,21 +749,35 @@ window.addQuestion=function(){
     errEl.classList.remove('show');
     if(!key||!icon||!name){errEl.textContent='⚠️ Tüm alanları doldurun!';errEl.classList.add('show');return}
     if(DEPTS.find(d=>d.key===key)){errEl.textContent='⚠️ Bu anahtar zaten var!';errEl.classList.add('show');return}
-    DEPTS.push({key,icon,name});
-    document.getElementById('newQKey').value='';
-    document.getElementById('newQIcon').value='';
-    document.getElementById('newQName').value='';
-    renderQuestions();
-    errEl.style.background='#d1fae5';errEl.style.color='#059669';errEl.style.borderColor='#10b981';
-    errEl.textContent='✅ Soru eklendi! (Anket sayfasını güncellemeyi unutmayın)';
-    errEl.classList.add('show');
-    setTimeout(()=>{errEl.classList.remove('show');errEl.style.background='#fee2e2';errEl.style.color='#dc2626';errEl.style.borderColor='#ef4444'},3000);
+    try{
+        const{data,error}=await supabase.from('survey_questions').insert([{
+            key,icon,
+            name_tr:name,name_en:name,name_ru:name,name_de:name,
+            name_pl:name,name_cs:name,name_fr:name,name_da:name,name_ro:name,
+            sort_order:DEPTS.length+1
+        }]).select();
+        if(error)throw error;
+        DEPTS.push({key,icon,name});
+        document.getElementById('newQKey').value='';
+        document.getElementById('newQIcon').value='';
+        document.getElementById('newQName').value='';
+        renderQuestions();
+        errEl.style.background='#d1fae5';errEl.style.color='#059669';errEl.style.borderColor='#10b981';
+        errEl.textContent='✅ Soru eklendi ve kaydedildi!';errEl.classList.add('show');
+        setTimeout(()=>{errEl.classList.remove('show');errEl.style.background='#fee2e2';errEl.style.color='#dc2626';errEl.style.borderColor='#ef4444'},3000);
+    }catch(e){console.error(e);errEl.textContent='⚠️ Soru eklenemedi: '+e.message;errEl.classList.add('show')}
 }
 
-window.deleteQuestion=function(idx,name){
+window.deleteQuestion=async function(idx,name){
     if(!confirm(`"${name}" sorusunu silmek istediğinizden emin misiniz?`))return;
-    DEPTS.splice(idx,1);
-    renderQuestions();
+    try{
+        const question=DEPTS[idx];
+        const{error}=await supabase.from('survey_questions').delete().eq('key',question.key);
+        if(error)throw error;
+        DEPTS.splice(idx,1);
+        renderQuestions();
+        console.log('✅ Soru silindi');
+    }catch(e){console.error(e);alert('Silme başarısız: '+e.message)}
 }
 
 function renderUsers(){
