@@ -3,154 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Noxinn Deluxe Hotel Memnuniyet Anketi</title>
+    <title>Guest Satisfaction Survey</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
+            align-items: flex-start;
+            padding: 30px 20px;
         }
-
         .container {
             background: white;
             border-radius: 24px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 600px;
+            max-width: 580px;
             width: 100%;
             overflow: hidden;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
         }
-
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 30px;
             text-align: center;
             color: white;
+            position: relative;
         }
-
-        .header h1 {
-            font-size: 26px;
-            margin-bottom: 8px;
+        .header h1 { font-size: 26px; margin-bottom: 6px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .lang-bar {
+            position: absolute;
+            top: 12px; right: 12px;
+            display: flex; gap: 4px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            max-width: 200px;
         }
-
-        .header p {
-            font-size: 15px;
-            opacity: 0.9;
+        .lang-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 6px;
+            padding: 3px 7px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-
-        .content {
-            padding: 30px;
-            overflow-y: auto;
-        }
-
-        .room-info {
-            background: #f8f9ff;
-            border-radius: 16px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 25px;
-            border: 2px solid #667eea;
-        }
-
-        .room-info .label {
-            font-size: 16px;
-            font-weight: 600;
-            color: #667eea;
-        }
-
+        .lang-btn:hover { background: rgba(255,255,255,0.3); }
+        .lang-btn.active { background: white; color: #667eea; font-weight: 600; }
+        .content { padding: 28px 26px; }
         .input-field {
             width: 100%;
-            padding: 12px;
+            padding: 13px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 15px;
             font-family: inherit;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s;
             background: white;
         }
-
-        .input-field:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .question {
-            margin-bottom: 30px;
-        }
-
+        .input-field:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
+        .input-field::placeholder { color: #999; }
+        .question { margin-bottom: 24px; }
         .question-title {
             font-size: 15px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
-        .question-icon {
-            font-size: 22px;
-        }
-
-        .star-rating {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-        }
-
+        .question-icon { font-size: 22px; }
+        .star-rating { display: flex; gap: 6px; justify-content: center; }
         .star {
-            font-size: 36px;
+            font-size: 38px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             color: #ddd;
             filter: grayscale(100%);
+            user-select: none;
+            -webkit-user-select: none;
         }
-
-        .star:hover {
-            color: #fbbf24;
-            transform: scale(1.1);
-            filter: grayscale(0%);
-        }
-
-        .star.active {
-            color: #fbbf24;
-            transform: scale(1.05);
-            filter: grayscale(0%);
-        }
-
+        .star:hover { transform: scale(1.15); filter: grayscale(0%); }
+        .star.active { filter: grayscale(0%); transform: scale(1.05); }
         .comment-box {
             width: 100%;
-            min-height: 100px;
-            padding: 12px;
+            min-height: 90px;
+            padding: 12px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
             font-size: 14px;
             font-family: inherit;
             resize: vertical;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s;
         }
-
-        .comment-box:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
+        .comment-box:focus { outline: none; border-color: #667eea; }
         .submit-btn {
             width: 100%;
-            padding: 16px;
+            padding: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
@@ -158,444 +110,219 @@
             font-size: 17px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 15px;
+            transition: all 0.3s;
+            margin-top: 10px;
         }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .success-message {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .success-message.show {
-            display: block;
-        }
-
-        .success-icon {
-            font-size: 70px;
-            margin-bottom: 15px;
-        }
-
-        .success-message h2 {
-            color: #10b981;
-            margin-bottom: 10px;
-            font-size: 24px;
-        }
-
-        .success-message p {
-            color: #666;
-            font-size: 15px;
-            line-height: 1.6;
-        }
-
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
         .error-message {
             background: #fee2e2;
             border: 2px solid #ef4444;
             color: #dc2626;
             padding: 12px;
             border-radius: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 18px;
             display: none;
             font-size: 14px;
         }
-
-        .error-message.show {
-            display: block;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 15px;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
+        .error-message.show { display: block; }
+        .success-message { display: none; text-align: center; padding: 50px 20px; }
+        .success-message.show { display: block; }
+        .success-message .success-icon { font-size: 70px; margin-bottom: 16px; }
+        .success-message h2 { color: #10b981; font-size: 24px; margin-bottom: 12px; }
+        .success-message p { color: #666; font-size: 15px; line-height: 1.6; }
+        .loading { display: none; text-align: center; padding: 20px; }
+        .loading.show { display: block; }
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            animation: spin 1s linear infinite;
+            width: 36px; height: 36px;
+            animation: spin 0.8s linear infinite;
             margin: 0 auto;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 600px) {
-            .header h1 {
-                font-size: 22px;
-            }
-
-            .star {
-                font-size: 30px;
-            }
-
-            .content {
-                padding: 25px 20px;
-            }
-        }
-
-        .info-section {
-            margin-bottom: 25px;
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 560px) {
+            .star { font-size: 32px; }
+            .content { padding: 22px 18px; }
+            .header { padding: 40px 20px 24px; }
+            .lang-bar { top: 8px; right: 8px; max-width: 170px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🏨 Noxinn Deluxe Hotel</h1>
-                <h2>Memnuniyet Anketi</h2>
-            <p>Görüşleriniz bizim için çok değerli!</p>
+<div class="container">
+    <div class="header">
+        <div class="lang-bar" id="langBar"></div>
+        <h1 id="titleText"></h1>
+        <p id="subtitleText"></p>
+    </div>
+    <div class="content">
+        <div id="surveyForm">
+            <div class="error-message" id="errorMessage"></div>
+            <div class="question">
+                <div class="question-title">
+                    <span class="question-icon">🚪</span>
+                    <span id="labelRoom"></span>
+                </div>
+                <input type="text" id="roomNumber" class="input-field" placeholder="101">
+            </div>
+            <div class="question">
+                <div class="question-title">
+                    <span class="question-icon">📧</span>
+                    <span id="labelEmail"></span>
+                </div>
+                <input type="email" id="emailAddress" class="input-field" placeholder="ornek@email.com">
+            </div>
+            <div id="deptQuestions"></div>
+            <div class="question">
+                <div class="question-title">
+                    <span class="question-icon">📝</span>
+                    <span id="labelComments"></span>
+                </div>
+                <textarea class="comment-box" id="comments" placeholder="..."></textarea>
+            </div>
+            <div class="loading" id="loading"><div class="spinner"></div></div>
+            <button class="submit-btn" id="submitBtn" onclick="submitSurvey()"></button>
         </div>
-
-        <div class="content">
-            <div id="surveyForm">
-                <div class="room-info">
-                    <div class="label">Lütfen Bilgilerinizi Girin</div>
-                </div>
-
-                <div class="error-message" id="errorMessage"></div>
-
-                <!-- Oda Numarası -->
-                <div class="info-section">
-                    <div class="question">
-                        <div class="question-title">
-                            <span class="question-icon">🚪</span>
-                            <span>Oda Numaranız</span>
-                        </div>
-                        <input 
-                            type="text" 
-                            id="roomNumber" 
-                            class="input-field" 
-                            placeholder="Örn: 101, 205..." 
-                            required>
-                    </div>
-
-                    <!-- Email -->
-                    <div class="question">
-                        <div class="question-title">
-                            <span class="question-icon">📧</span>
-                            <span>E-posta Adresiniz</span>
-                        </div>
-                        <input 
-                            type="email" 
-                            id="emailAddress" 
-                            class="input-field" 
-                            placeholder="ornek@email.com" 
-                            required>
-                    </div>
-                </div>
-
-                <!-- DEPARTMAN SORULARI -->
-                
-                <!-- 1. İçecekler ve Servis -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🍹</span>
-                        <span>İçecekler ve Servis</span>
-                    </div>
-                    <div class="star-rating" data-dept="beverages_service">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- 2. Yiyecekler -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🍽️</span>
-                        <span>Yiyecekler</span>
-                    </div>
-                    <div class="star-rating" data-dept="food">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- 3. Temizlik -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🧹</span>
-                        <span>Temizlik</span>
-                    </div>
-                    <div class="star-rating" data-dept="cleaning">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- 4. Resepsiyon -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">👥</span>
-                        <span>Resepsiyon</span>
-                    </div>
-                    <div class="star-rating" data-dept="reception">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- 5. Teknik Servis -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🔧</span>
-                        <span>Teknik Servis</span>
-                    </div>
-                    <div class="star-rating" data-dept="technical">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- 6. Güvenlik -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🛡️</span>
-                        <span>Güvenlik</span>
-                    </div>
-                    <div class="star-rating" data-dept="security">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- 7. Bir daha gelir misiniz? -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">🔄</span>
-                        <span>Bir daha gelir misiniz?</span>
-                    </div>
-                    <div class="star-rating" data-dept="return">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- 8. Bizi tavsiye eder misiniz? -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">⭐</span>
-                        <span>Bizi tavsiye eder misiniz?</span>
-                    </div>
-                    <div class="star-rating" data-dept="recommend">
-                        <span class="star" data-value="1">☆</span>
-                        <span class="star" data-value="2">☆</span>
-                        <span class="star" data-value="3">☆</span>
-                        <span class="star" data-value="4">☆</span>
-                        <span class="star" data-value="5">☆</span>
-                    </div>
-                </div>
-
-                <!-- Yorumlar -->
-                <div class="question">
-                    <div class="question-title">
-                        <span class="question-icon">📝</span>
-                        <span>Önerileriniz ve Yorumlarınız</span>
-                    </div>
-                    <textarea 
-                        class="comment-box" 
-                        id="comments" 
-                        placeholder="Bizimle paylaşmak istediğiniz her şeyi yazabilirsiniz..."></textarea>
-                </div>
-
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p style="margin-top: 10px; color: #666; font-size: 14px;">Anketiniz gönderiliyor...</p>
-                </div>
-
-                <button class="submit-btn" id="submitBtn" onclick="submitSurvey()">
-                    Anketi Gönder
-                </button>
-            </div>
-
-            <div class="success-message" id="successMessage">
-                <div class="success-icon">✅</div>
-                <h2>Teşekkür Ederiz!</h2>
-                <p>Görüşleriniz bizim için çok değerli. Daha iyi bir hizmet sunabilmek için geri bildirimlerinizi dikkate alacağız.</p>
-                <p style="margin-top: 15px; font-weight: 600;">Keyifli konaklama dileriz! 🏨</p>
-            </div>
+        <div class="success-message" id="successMessage">
+            <div class="success-icon">✅</div>
+            <h2 id="successTitle"></h2>
+            <p id="successBody"></p>
+            <p style="margin-top:14px; font-weight:600;" id="successFooter"></p>
         </div>
     </div>
+</div>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+const supabase = createClient(
+    'https://hxjpzgqrylmcwabkfnqc.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4anB6Z3FyeWxtY3dhYmtmbnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Nzk1ODksImV4cCI6MjA4NTE1NTU4OX0.YwQUuliCuxl4yc_Wqbt7UA79QYD1wxl-bmK4h1xG6Rc'
+);
 
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+const LANGS = {
+tr:{code:'tr',name:'TR',title:'🏨 Misafir Memnuniyet Anketi',subtitle:'Görüşleriniz bizim için çok değerli!',labelRoom:'Oda Numaranız',labelEmail:'E-posta Adresiniz',labelComments:'Önerileriniz ve Yorumlarınız',btnSubmit:'Anketi Gönder',successTitle:'Teşekkür Ederim!',successBody:'Görüşleriniz bizim için çok değerli. Daha iyi bir hizmet sunabilmek için geri bildirimlerinizi dikkate alacağız.',successFooter:'Keyifli konaklama dileriz! 🏨',errRoom:'Lütfen oda numaranızı girin!',errEmail:'Lütfen e-posta adresinizi girin!',errEmailFmt:'Lütfen geçerli bir e-posta adresi girin!',errRating:'Lütfen en az bir departmana puan verin!',errSend:'Anket gönderilemedi. Lütfen tekrar deneyin.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'İçecekler ve Servis'},{key:'dept_food',icon:'🍽️',name:'Yiyecekler'},{key:'dept_cleaning',icon:'🧹',name:'Temizlik'},{key:'dept_reception',icon:'👥',name:'Resepsiyon'},{key:'dept_technical',icon:'🔧',name:'Teknik Servis'},{key:'dept_security',icon:'🛡️',name:'Güvenlik'},{key:'dept_return',icon:'🔄',name:'Bir daha gelir misiniz?'},{key:'dept_recommend',icon:'⭐',name:'Bizi tavsiye eder misiniz?'}]},
+en:{code:'en',name:'EN',title:'🏨 Guest Satisfaction Survey',subtitle:'Your feedback is very important to us!',labelRoom:'Room Number',labelEmail:'Your Email Address',labelComments:'Suggestions & Comments',btnSubmit:'Submit Survey',successTitle:'Thank You!',successBody:'Your feedback is very valuable to us. We will take your comments into account to provide better service.',successFooter:'Enjoy your stay! 🏨',errRoom:'Please enter your room number!',errEmail:'Please enter your email address!',errEmailFmt:'Please enter a valid email address!',errRating:'Please rate at least one department!',errSend:'Survey could not be sent. Please try again.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Beverages & Service'},{key:'dept_food',icon:'🍽️',name:'Food'},{key:'dept_cleaning',icon:'🧹',name:'Cleanliness'},{key:'dept_reception',icon:'👥',name:'Reception'},{key:'dept_technical',icon:'🔧',name:'Technical Service'},{key:'dept_security',icon:'🛡️',name:'Security'},{key:'dept_return',icon:'🔄',name:'Will you come back?'},{key:'dept_recommend',icon:'⭐',name:'Would you recommend us?'}]},
+ru:{code:'ru',name:'RU',title:'🏨 Опрос удовлетворённости гостей',subtitle:'Ваши отзывы очень важны для нас!',labelRoom:'Номер комнаты',labelEmail:'Ваш адрес электронной почты',labelComments:'Предложения и комментарии',btnSubmit:'Отправить опрос',successTitle:'Спасибо!',successBody:'Ваши отзывы очень ценны для нас. Мы учтём ваши комментарии для улучшения качества обслуживания.',successFooter:'Приятного пребывания! 🏨',errRoom:'Пожалуйста, укажите номер вашей комнаты!',errEmail:'Пожалуйста, укажите адрес электронной почты!',errEmailFmt:'Пожалуйста, укажите корректный адрес!',errRating:'Пожалуйста, оценьте хотя бы один отдел!',errSend:'Опрос не удалось отправить. Попробуйте снова.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Напитки и обслуживание'},{key:'dept_food',icon:'🍽️',name:'Питание'},{key:'dept_cleaning',icon:'🧹',name:'Чистота'},{key:'dept_reception',icon:'👥',name:'Регистрация'},{key:'dept_technical',icon:'🔧',name:'Техническое обслуживание'},{key:'dept_security',icon:'🛡️',name:'Безопасность'},{key:'dept_return',icon:'🔄',name:'Вы приедете снова?'},{key:'dept_recommend',icon:'⭐',name:'Рекомендуете ли вы нас?'}]},
+de:{code:'de',name:'DE',title:'🏨 Gäste-Zufriedenheitsbefragung',subtitle:'Ihre Rückmeldung ist sehr wichtig für uns!',labelRoom:'Zimmernummer',labelEmail:'Ihre E-Mail-Adresse',labelComments:'Vorschläge und Kommentare',btnSubmit:'Umfrage senden',successTitle:'Vielen Dank!',successBody:'Ihre Rückmeldung ist sehr wertvoll. Wir werden Ihre Kommentare berücksichtigen.',successFooter:'Genießen Sie Ihren Aufenthalt! 🏨',errRoom:'Bitte geben Sie Ihre Zimmernummer ein!',errEmail:'Bitte geben Sie Ihre E-Mail-Adresse ein!',errEmailFmt:'Bitte geben Sie eine gültige E-Mail ein!',errRating:'Bitte bewerten Sie mindestens eine Abteilung!',errSend:'Die Umfrage konnte nicht gesendet werden.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Getränke & Service'},{key:'dept_food',icon:'🍽️',name:'Essen'},{key:'dept_cleaning',icon:'🧹',name:'Sauberkeit'},{key:'dept_reception',icon:'👥',name:'Empfang'},{key:'dept_technical',icon:'🔧',name:'Technischer Dienst'},{key:'dept_security',icon:'🛡️',name:'Sicherheit'},{key:'dept_return',icon:'🔄',name:'Kommen Sie wiederholt?'},{key:'dept_recommend',icon:'⭐',name:'Empfehlen Sie uns?'}]},
+pl:{code:'pl',name:'PL',title:'🏨 Ankieta satysfakcji gości',subtitle:'Wasze opinie są dla nas bardzo ważne!',labelRoom:'Numer pokoju',labelEmail:'Twój adres e-mail',labelComments:'Sugestie i komentarze',btnSubmit:'Wyślij ankietę',successTitle:'Dziękujemy!',successBody:'Wasze opinie są bardzo cenne. Uwzględnimy wasze komentarze dla lepszego serviceu.',successFooter:'Miło spędzić czas! 🏨',errRoom:'Proszę podać numer pokoju!',errEmail:'Proszę podać adres e-mail!',errEmailFmt:'Proszę podać poprawny adres e-mail!',errRating:'Proszę ocenić przynajmniej jeden dział!',errSend:'Ankieta nie została wysłana. Spróbuj ponownie.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Napoje i obsługa'},{key:'dept_food',icon:'🍽️',name:'Jedzenie'},{key:'dept_cleaning',icon:'🧹',name:'Sprzątanie'},{key:'dept_reception',icon:'👥',name:'Recepcja'},{key:'dept_technical',icon:'🔧',name:'Obsługa techniczna'},{key:'dept_security',icon:'🛡️',name:'Bezpieczeństwo'},{key:'dept_return',icon:'🔄',name:'Czy wrócisz?'},{key:'dept_recommend',icon:'⭐',name:'Czy nas polecisz?'}]},
+cs:{code:'cs',name:'CZ',title:'🏨 Průzkum spokojnosti hosté',subtitle:'Vaše zpětná vazba je pro nás hodně důležitá!',labelRoom:'Číslo místnosti',labelEmail:'Váš e-mailový adresa',labelComments:'Návrhy a komentáře',btnSubmit:'Odeslat průzkum',successTitle:'Děkujeme!',successBody:'Vaše zpětná vazba je pro nás hodně cenná. Zohledníme vaše komentáře.',successFooter:'Příjemný pobyt! 🏨',errRoom:'Prosím, zadejte číslo místnosti!',errEmail:'Prosím, zadejte e-mailovou adresu!',errEmailFmt:'Prosím, zadejte platnou e-mailovou adresu!',errRating:'Prosím, ohodnoťte alespoň jednu oddělení!',errSend:'Průzkum nebyl odeslán. Zkuste znovu.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Nápoje a obsluha'},{key:'dept_food',icon:'🍽️',name:'Jídlo'},{key:'dept_cleaning',icon:'🧹',name:'Úklid'},{key:'dept_reception',icon:'👥',name:'Recepce'},{key:'dept_technical',icon:'🔧',name:'Technická obsluha'},{key:'dept_security',icon:'🛡️',name:'Bezpečnost'},{key:'dept_return',icon:'🔄',name:'Vrátíte se?'},{key:'dept_recommend',icon:'⭐',name:'Doporučíte nás?'}]},
+fr:{code:'fr',name:'FR',title:'🏨 Enquête de satisfaction des hôtes',subtitle:'Vos avis sont très importants pour nous !',labelRoom:'Numéro de chambre',labelEmail:'Votre adresse e-mail',labelComments:'Suggestions et commentaires',btnSubmit:'Envoyer l\'enquête',successTitle:'Merci !',successBody:'Vos avis sont très précieux pour nous. Nous en tiendrons compte pour améliorer notre service.',successFooter:'Profitez de votre séjour ! 🏨',errRoom:'Veuillez entrer votre numéro de chambre !',errEmail:'Veuillez entrer votre adresse e-mail !',errEmailFmt:'Veuillez entrer une adresse e-mail valide !',errRating:'Veuillez évaluer au moins un département !',errSend:'L\'enquête n\'a pas pu être envoyée.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Boissons & Service'},{key:'dept_food',icon:'🍽️',name:'Nourriture'},{key:'dept_cleaning',icon:'🧹',name:'Propreté'},{key:'dept_reception',icon:'👥',name:'Réception'},{key:'dept_technical',icon:'🔧',name:'Service technique'},{key:'dept_security',icon:'🛡️',name:'Sécurité'},{key:'dept_return',icon:'🔄',name:'Reviendrez-vous ?'},{key:'dept_recommend',icon:'⭐',name:'Nous recommanderiez-vous ?'}]},
+da:{code:'da',name:'DK',title:'🏨 Gæstetilfreds Undersøgelse',subtitle:'Jeres tilbagemeldinger er meget vigtige for os!',labelRoom:'Rumsnummer',labelEmail:'Din e-mailadresse',labelComments:'Forslag og kommentarer',btnSubmit:'Indsænd undersøgelse',successTitle:'Tak!',successBody:'Jeres tilbagemeldinger er meget forskellige for os. Vi vil tage jeres kommentarier i betragtning.',successFooter:'Nyd dit ophold! 🏨',errRoom:'Venlig udfyld dit rumsnummer!',errEmail:'Venlig udfyld din e-mailadresse!',errEmailFmt:'Venlig udfyld en gyldig e-mailadresse!',errRating:'Venlig vurderer mindst én afdeling!',errSend:'Undersøgelsen kunne ikke sendes.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Drinks & Service'},{key:'dept_food',icon:'🍽️',name:'Mad'},{key:'dept_cleaning',icon:'🧹',name:'Renlighed'},{key:'dept_reception',icon:'👥',name:'Reception'},{key:'dept_technical',icon:'🔧',name:'Teknisk service'},{key:'dept_security',icon:'🛡️',name:'Sikkerhed'},{key:'dept_return',icon:'🔄',name:'Vender I jer tilbage?'},{key:'dept_recommend',icon:'⭐',name:'Anbefaler I jer os?'}]},
+ro:{code:'ro',name:'RO',title:'🏨 Sondaj de satisfacție a hoteluluilor',subtitle:'Opiniile dumneavoastră sunt foart importante pentru noi!',labelRoom:'Numărul camerelor',labelEmail:'Adresa dumneavoastră de e-mail',labelComments:'Sugestii și comentarii',btnSubmit:'Trimiteți sondajul',successTitle:'Mulțumim!',successBody:'Opiniile dumneavoastră sunt foart prețioase. Vom ține cont de comentariile dumneavoastră.',successFooter:'Bucurați-vă de șederea dumneavoastră! 🏨',errRoom:'Vă rugăm să introduceți numărul camerelor!',errEmail:'Vă rugăm să introduceți adresa de e-mail!',errEmailFmt:'Vă rugăm să introduceți o adresă de e-mail validă!',errRating:'Vă rugăm să evaluați cel puțin un departament!',errSend:'Sondajul nu a fost trimis. Încercați din nou.',depts:[{key:'dept_beverages_service',icon:'🍹',name:'Băuturi și serviciu'},{key:'dept_food',icon:'🍽️',name:'Mâncare'},{key:'dept_cleaning',icon:'🧹',name:'Curățenie'},{key:'dept_reception',icon:'👥',name:'Recepție'},{key:'dept_technical',icon:'🔧',name:'Serviciu tehnic'},{key:'dept_security',icon:'🛡️',name:'Securitate'},{key:'dept_return',icon:'🔄',name:'Veți reveni?'},{key:'dept_recommend',icon:'⭐',name:'Ne veți recomanda?'}]}
+};
 
-        const supabase = createClient(
-            'https://hxjpzgqrylmcwabkfnqc.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4anB6Z3FyeWxtY3dhYmtmbnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Nzk1ODksImV4cCI6MjA4NTE1NTU4OX0.YwQUuliCuxl4yc_Wqbt7UA79QYD1wxl-bmK4h1xG6Rc'
-        )
+let currentLang = 'tr';
+const ratings = {};
 
-        // URL'den oda numarasını al (varsa otomatik doldur)
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlRoomNumber = decodeURIComponent(urlParams.get('oda') || '');
-        if (urlRoomNumber) {
-            document.getElementById('roomNumber').value = urlRoomNumber;
-        }
+function detectLang() {
+    const url = new URLSearchParams(window.location.search);
+    if (url.get('lang') && LANGS[url.get('lang')]) return url.get('lang');
+    const b = (navigator.language || 'tr').split('-')[0].toLowerCase();
+    return LANGS[b] ? b : 'tr';
+}
 
-        // Puanları sakla
-        const ratings = {
-            beverages_service: 0,
-            food: 0,
-            cleaning: 0,
-            reception: 0,
-            technical: 0,
-            security: 0,
-            return: 0,
-            recommend: 0
-        };
+function renderLangBar() {
+    document.getElementById('langBar').innerHTML = Object.keys(LANGS).map(c =>
+        `<button class="lang-btn ${c===currentLang?'active':''}" onclick="setLang('${c}')">${LANGS[c].name}</button>`
+    ).join('');
+}
 
-        // Yıldız tıklama
-        document.querySelectorAll('.star-rating').forEach(ratingContainer => {
-            const dept = ratingContainer.dataset.dept;
-            const stars = ratingContainer.querySelectorAll('.star');
+function setLang(code) {
+    currentLang = code;
+    const L = LANGS[code];
+    document.documentElement.lang = code;
+    document.getElementById('titleText').textContent     = L.title;
+    document.getElementById('subtitleText').textContent  = L.subtitle;
+    document.getElementById('labelRoom').textContent     = L.labelRoom;
+    document.getElementById('labelEmail').textContent    = L.labelEmail;
+    document.getElementById('labelComments').textContent = L.labelComments;
+    document.getElementById('submitBtn').textContent     = L.btnSubmit;
+    document.getElementById('successTitle').textContent  = L.successTitle;
+    document.getElementById('successBody').textContent   = L.successBody;
+    document.getElementById('successFooter').textContent = L.successFooter;
+    renderLangBar();
+    renderDeptQuestions();
+}
+window.setLang = setLang;
 
-            stars.forEach(star => {
-                star.addEventListener('click', () => {
-                    const value = parseInt(star.dataset.value);
-                    ratings[dept] = value;
+function renderDeptQuestions() {
+    const L = LANGS[currentLang];
+    const c = document.getElementById('deptQuestions');
+    c.innerHTML = L.depts.map(d => {
+        ratings[d.key] = ratings[d.key] || 0;
+        const v = ratings[d.key];
+        return `<div class="question">
+            <div class="question-title"><span class="question-icon">${d.icon}</span><span>${d.name}</span></div>
+            <div class="star-rating" data-dept="${d.key}">
+                ${[1,2,3,4,5].map(i=>`<span class="star ${i<=v?'active':''}" data-value="${i}">${i<=v?'⭐':'☆'}</span>`).join('')}
+            </div></div>`;
+    }).join('');
 
-                    // Yıldızları güncelle
-                    stars.forEach((s, index) => {
-                        if (index < value) {
-                            s.classList.add('active');
-                            s.textContent = '⭐';
-                        } else {
-                            s.classList.remove('active');
-                            s.textContent = '☆';
-                        }
-                    });
+    c.querySelectorAll('.star-rating').forEach(g => {
+        const dept = g.dataset.dept;
+        g.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', () => {
+                const val = parseInt(star.dataset.value);
+                ratings[dept] = val;
+                g.querySelectorAll('.star').forEach((s,i) => {
+                    s.classList.toggle('active', i < val);
+                    s.textContent = i < val ? '⭐' : '☆';
                 });
             });
         });
+    });
+}
 
-        // Anket gönder
-        window.submitSurvey = async function() {
-            const roomNumber = document.getElementById('roomNumber').value.trim();
-            const email = document.getElementById('emailAddress').value.trim();
+window.submitSurvey = async function() {
+    const L = LANGS[currentLang];
+    const room  = document.getElementById('roomNumber').value.trim();
+    const email = document.getElementById('emailAddress').value.trim();
 
-            // Kontroller
-            if (!roomNumber) {
-                showError('Lütfen oda numaranızı girin!');
-                document.getElementById('roomNumber').focus();
-                return;
-            }
+    if (!room)  return showError(L.errRoom);
+    if (!email) return showError(L.errEmail);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError(L.errEmailFmt);
+    if (!Object.values(ratings).some(r => r > 0))   return showError(L.errRating);
 
-            if (!email) {
-                showError('Lütfen e-posta adresinizi girin!');
-                document.getElementById('emailAddress').focus();
-                return;
-            }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    document.getElementById('loading').classList.add('show');
+    hideError();
 
-            // Email formatı kontrolü
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                showError('Lütfen geçerli bir e-posta adresi girin!');
-                document.getElementById('emailAddress').focus();
-                return;
-            }
+    try {
+        const payload = { room_number: room, email, comments: document.getElementById('comments').value || null };
+        LANGS.tr.depts.forEach(d => { payload[d.key] = ratings[d.key] || null; });
 
-            // En az 1 departman puanlanmalı
-            const hasRating = Object.values(ratings).some(r => r > 0);
-            if (!hasRating) {
-                showError('Lütfen en az bir departmana puan verin!');
-                return;
-            }
+        const { error } = await supabase.from('surveys').insert([payload]);
+        if (error) throw error;
 
-            const btn = document.getElementById('submitBtn');
-            const loading = document.getElementById('loading');
-            const errorMsg = document.getElementById('errorMessage');
+        document.getElementById('surveyForm').style.display = 'none';
+        document.getElementById('successMessage').classList.add('show');
+    } catch(e) {
+        console.error(e);
+        showError(L.errSend);
+        btn.disabled = false;
+    } finally {
+        document.getElementById('loading').classList.remove('show');
+    }
+}
 
-            btn.disabled = true;
-            loading.classList.add('show');
-            errorMsg.classList.remove('show');
+function showError(msg) {
+    const el = document.getElementById('errorMessage');
+    el.textContent = '⚠️ ' + msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 5000);
+}
+function hideError() { document.getElementById('errorMessage').classList.remove('show'); }
 
-            try {
-                const { data, error } = await supabase
-                    .from('surveys')
-                    .insert([
-                        {
-                            room_number: roomNumber,
-                            email: email,
-                            dept_beverages_service: ratings.beverages_service || null,
-                            dept_food: ratings.food || null,
-                            dept_cleaning: ratings.cleaning || null,
-                            dept_reception: ratings.reception || null,
-                            dept_technical: ratings.technical || null,
-                            dept_security: ratings.security || null,
-                            dept_return: ratings.return || null,
-                            dept_recommend: ratings.recommend || null,
-                            comments: document.getElementById('comments').value || null
-                        }
-                    ]);
-
-                if (error) throw error;
-
-                // Başarılı
-                document.getElementById('surveyForm').style.display = 'none';
-                document.getElementById('successMessage').classList.add('show');
-
-            } catch (error) {
-                console.error('Hata:', error);
-                showError('Anket gönderilemedi. Lütfen tekrar deneyin.');
-                btn.disabled = false;
-            } finally {
-                loading.classList.remove('show');
-            }
-        }
-
-        function showError(message) {
-            const errorMsg = document.getElementById('errorMessage');
-            errorMsg.textContent = '⚠️ ' + message;
-            errorMsg.classList.add('show');
-            
-            // Scroll to top
-            document.querySelector('.content').scrollTop = 0;
-            
-            setTimeout(() => {
-                errorMsg.classList.remove('show');
-            }, 5000);
-        }
-    </script>
+// INIT
+(function() {
+    const url = new URLSearchParams(window.location.search);
+    const room = decodeURIComponent(url.get('oda') || '');
+    if (room) document.getElementById('roomNumber').value = room;
+    currentLang = detectLang();
+    setLang(currentLang);
+})();
+</script>
 </body>
 </html>
