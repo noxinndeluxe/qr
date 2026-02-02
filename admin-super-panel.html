@@ -174,6 +174,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <div class="menu-item" data-page="surveys" onclick="nav(this,'surveys')"><span class="icon">📋</span><span>Anketler</span></div>
 <div class="menu-item" data-page="emails" onclick="nav(this,'emails')"><span class="icon">📧</span><span>E-postalar</span></div>
 <div class="menu-item" data-page="reports" onclick="nav(this,'reports')"><span class="icon">📈</span><span>Raporlar</span></div>
+<div class="menu-item" data-page="ai-analyses" onclick="nav(this,'ai-analyses')"><span class="icon">🤖</span><span>AI Analizler</span></div>
 <div class="menu-item" data-page="settings" onclick="nav(this,'settings')"><span class="icon">⚙️</span><span>Ayarlar</span></div>
 <div class="menu-item" data-page="users" onclick="nav(this,'users')"><span class="icon">👥</span><span>Kullanıcılar</span></div>
 <div class="sidebar-bottom">
@@ -295,6 +296,29 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <div class="login-error" id="addUserError" style="margin-top:12px"></div>
 </div>
 <div class="users-table" id="usersTable"></div>
+</div>
+
+<!-- AI ANALIZLER -->
+<div id="ai-analyses" class="page">
+<div class="page-header"><h2>🤖 AI Analizler</h2><p>Yapay zeka destekli yorum analizi</p></div>
+<div class="controls" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap">
+<button class="btn btn-info" onclick="loadAIAnalyses()">🔄 Yenile</button>
+<select id="aiFilterUrgency" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
+<option value="all">Tüm Öncelikler</option>
+<option value="critical">🔴 Kritik</option>
+<option value="high">🟠 Yüksek</option>
+<option value="medium">🟡 Orta</option>
+<option value="low">🟢 Düşük</option>
+</select>
+<select id="aiFilterSentiment" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
+<option value="all">Tüm Duygular</option>
+<option value="negative">😠 Olumsuz</option>
+<option value="mixed">😐 Karışık</option>
+<option value="neutral">😶 Nötr</option>
+<option value="positive">😊 Olumlu</option>
+</select>
+</div>
+<div id="aiAnalysesGrid"></div>
 </div>
 </div>
 </div>
@@ -577,6 +601,7 @@ function renderSurveyCard(s){
                 <div class="badge-row" style="justify-content:flex-end;margin-top:6px">
                     ${isAdmin?`<button class="btn btn-danger" onclick="deleteSurvey('${s.id}','${s.room_number}')">Sil</button>`:''}
                     ${isHighScore&&s.email?`<button class="btn btn-info" onclick="openReviewModal('${s.email}','${s.room_number}')">⭐</button>`:''}
+                    <button class="btn btn-primary" onclick="analyzeWithAI('${s.id}')">🤖 Analiz Et</button>
                 </div>
             </div>
         </div>
@@ -924,7 +949,209 @@ supabase.channel('realtime-surveys')
     })
     .subscribe();
 
-if(!checkSession()){}
+// ═══════════════════════════════════════════════════════════
+// AI ANALIZ FONKSİYONLARI
+// ═══════════════════════════════════════════════════════════
+
+let allAIAnalyses = [];
+
+window.analyzeWithAI = async function(surveyId) {
+    const survey = allSurveys.find(s => s.id === surveyId);
+    if (!survey) return alert('Anket bulunamadı!');
+    
+    let sum = 0, cnt = 0;
+    DEPTS.forEach(d => {
+        const r = getRating(survey, d.key);
+        if (r > 0) { sum += r; cnt++; }
+    });
+    const avgScore = cnt > 0 ? sum / cnt : 0;
+    
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Analiz ediliyor...';
+    
+    try {
+        const response = await fetch(
+            'https://hxjpzgqrylmcwabkfnqc.supabase.co/functions/v1/analyze-survey',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabase.supabaseKey}`
+                },
+                body: JSON.stringify({
+                    surveyId: survey.id,
+                    roomNumber: survey.room_number,
+                    email: survey.email || '',
+                    comments: survey.comments || 'Yorum yok',
+                    ratings: survey.ratings || {},
+                    avgScore: avgScore
+                })
+            }
+        );
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const a = result.analysis;
+            alert(`✅ AI Analizi Tamamlandı!\n\n` + 
+                  `Duygu: ${a.sentiment}\n` +
+                  `Aciliyet: ${a.urgency}\n` +
+                  `Kategori: ${a.category}\n\n` +
+                  `Özet: ${a.summary}\n\n` +
+                  `Detayları görmek için "AI Analizler" sayfasına gidin.`);
+            
+            await loadAIAnalyses();
+        } else {
+            throw new Error(result.error || 'Analiz başarısız');
+        }
+    } catch (error) {
+        console.error('AI Analiz hatası:', error);
+        alert('❌ AI analizi başarısız:\n\n' + error.message + '\n\nEdge Function deploy edildi mi?\nGEMINI_API_KEY secret ekli mi?');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+async function loadAIAnalyses() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_analyses')
+            .select('*, surveys(room_number, email, created_at)')
+            .order('analyzed_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        allAIAnalyses = data || [];
+        console.log('✅ AI Analizler yüklendi:', allAIAnalyses.length);
+        renderAIAnalyses();
+    } catch (e) {
+        console.error('AI analizleri yükleme hatası:', e);
+    }
+}
+
+function renderAIAnalyses() {
+    const grid = document.getElementById('aiAnalysesGrid');
+    if (!grid) return;
+    
+    let filtered = allAIAnalyses;
+    
+    const urgencyFilter = document.getElementById('aiFilterUrgency')?.value;
+    const sentimentFilter = document.getElementById('aiFilterSentiment')?.value;
+    
+    if (urgencyFilter && urgencyFilter !== 'all') {
+        filtered = filtered.filter(a => a.urgency === urgencyFilter);
+    }
+    
+    if (sentimentFilter && sentimentFilter !== 'all') {
+        filtered = filtered.filter(a => a.sentiment === sentimentFilter);
+    }
+    
+    if (!filtered.length) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <div class="e-icon">🤖</div>
+                <h2>AI analizi yok</h2>
+                <p>Anketlere "🤖 Analiz Et" butonu ile AI analizi yapabilirsiniz</p>
+            </div>`;
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(renderAIAnalysisCard).join('');
+}
+
+function renderAIAnalysisCard(analysis) {
+    const urgencyColors = {
+        critical: '#ef4444',
+        high: '#f97316',
+        medium: '#f59e0b',
+        low: '#10b981'
+    };
+    
+    const urgencyIcons = {
+        critical: '🔴',
+        high: '🟠',
+        medium: '🟡',
+        low: '🟢'
+    };
+    
+    const sentimentIcons = {
+        positive: '😊',
+        neutral: '😶',
+        mixed: '😐',
+        negative: '😠'
+    };
+    
+    const survey = analysis.surveys || {};
+    const date = new Date(analysis.analyzed_at).toLocaleString('tr-TR');
+    
+    return `
+        <div class="survey-card" style="border-left: 4px solid ${urgencyColors[analysis.urgency] || '#999'}">
+            <div class="survey-header">
+                <div>
+                    <div class="room-badge">Oda ${survey.room_number || '?'}</div>
+                    <div class="badge-row">
+                        <span class="alert-badge" style="background:${urgencyColors[analysis.urgency] || '#999'};color:white">
+                            ${urgencyIcons[analysis.urgency] || '⚪'} ${(analysis.urgency || 'N/A').toUpperCase()}
+                        </span>
+                        <span class="alert-badge" style="background:#667eea;color:white">
+                            ${sentimentIcons[analysis.sentiment] || '😶'} ${analysis.sentiment || 'N/A'}
+                        </span>
+                    </div>
+                </div>
+                <div style="text-align:right">
+                    <div class="date-badge">${date}</div>
+                    <div class="date-badge" style="margin-top:4px">📊 ${analysis.category || 'general'}</div>
+                </div>
+            </div>
+            
+            <div class="comments-section">
+                <div class="c-title">🤖 AI Özeti</div>
+                <p><strong>${analysis.summary || 'Özet yok'}</strong></p>
+            </div>
+            
+            ${analysis.issues && analysis.issues.length ? `
+                <div class="comments-section">
+                    <div class="c-title">⚠️ Tespit Edilen Sorunlar (${analysis.issues.length})</div>
+                    ${analysis.issues.map(issue => `
+                        <div style="padding:10px;background:#fef2f2;border-radius:8px;margin:8px 0;border-left:3px solid #ef4444">
+                            <strong>${issue.issue || 'Sorun'}</strong>
+                            <div style="font-size:12px;color:#666;margin-top:4px">
+                                📍 ${issue.department || 'N/A'} • 
+                                Ciddiyet: ${issue.severity || 'N/A'}
+                            </div>
+                            ${issue.evidence ? `<div style="font-size:11px;color:#999;margin-top:4px;font-style:italic">"${issue.evidence}"</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${analysis.recommendations && analysis.recommendations.length ? `
+                <div class="comments-section">
+                    <div class="c-title">💡 AI Önerileri (${analysis.recommendations.length})</div>
+                    ${analysis.recommendations.map((rec, idx) => `
+                        <div style="padding:12px;background:#f0f9ff;border-radius:8px;margin:8px 0;border-left:3px solid #3b82f6">
+                            <strong>${idx + 1}. ${rec.action || 'Öneri'}</strong>
+                            <div style="font-size:12px;color:#666;margin-top:6px">
+                                👤 ${rec.assignTo || 'Atanmadı'} • 
+                                ⏱️ ${rec.estimatedTime || 'Belirsiz'} • 
+                                🎯 Öncelik: ${rec.priority || 'N/A'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function filterAIAnalyses() {
+    renderAIAnalyses();
+}
+
+if(!checkSession(){}
 </script>
 </body>
 </html>
