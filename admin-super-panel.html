@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -260,6 +259,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <!-- SETTINGS -->
 <div id="settings" class="page">
 <div class="page-header"><h2>⚙️ Ayarlar</h2><p>Anket soruları ve sistem ayarları</p></div>
+
+<div class="add-user-form" style="background:#f0f9ff;border:2px solid #3b82f6">
+<h3>🤖 AI Analiz Ayarları</h3>
+<p style="color:#666;font-size:13px;margin-bottom:12px">Google Gemini API Key'inizi girin. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#3b82f6">API Key almak için tıklayın</a></p>
+<div class="form-row">
+<input type="text" id="geminiApiKey" placeholder="AIzaSy..." style="flex:1">
+<button class="btn btn-primary" onclick="saveGeminiKey()">💾 Kaydet</button>
+</div>
+<div class="login-error" id="geminiKeyError" style="margin-top:12px"></div>
+<div id="geminiKeyStatus" style="margin-top:12px;display:none;padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;color:#059669">
+✅ API Key kaydedildi! Artık AI analiz yapabilirsiniz.
+</div>
+</div>
+
 <div class="add-user-form">
 <h3>➕ Yeni Soru Ekle</h3>
 <div class="form-row">
@@ -468,7 +481,7 @@ window.nav=function(el,pageId){
     }
     if(pageId==='users')renderUsers();
     if(pageId==='emails')renderEmails();
-    if(pageId==='settings')renderQuestions();
+    if(pageId==='settings'){renderQuestions();loadGeminiKey();}
 }
 
 function updateDashboard(){
@@ -843,6 +856,41 @@ window.deleteQuestion=async function(idx,name){
     }catch(e){console.error(e);alert('Silme başarısız: '+e.message)}
 }
 
+// Gemini API Key kaydetme
+window.saveGeminiKey=function(){
+    const key=document.getElementById('geminiApiKey').value.trim();
+    const errEl=document.getElementById('geminiKeyError');
+    const statusEl=document.getElementById('geminiKeyStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display='none';
+    
+    if(!key){
+        errEl.textContent='⚠️ API Key girin!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    if(!key.startsWith('AIzaSy')){
+        errEl.textContent='⚠️ Geçersiz API Key formatı! "AIzaSy..." ile başlamalı.';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    localStorage.setItem('gemini_api_key',key);
+    statusEl.style.display='block';
+    setTimeout(()=>statusEl.style.display='none',5000);
+}
+
+// Sayfa yüklendiğinde key'i göster
+function loadGeminiKey(){
+    const key=localStorage.getItem('gemini_api_key');
+    if(key){
+        document.getElementById('geminiApiKey').value=key;
+        document.getElementById('geminiKeyStatus').style.display='block';
+    }
+}
+
 function renderUsers(){
     const el=document.getElementById('usersTable');
     document.getElementById('addUserForm').style.display=curUser.role==='admin'?'block':'none';
@@ -960,12 +1008,19 @@ window.analyzeWithAI = async function(surveyId) {
     const survey = allSurveys.find(s => s.id === surveyId);
     if (!survey) return alert('Anket bulunamadı!');
     
+    // Gemini API Key - Ayarlar sayfasından alınacak (localStorage)
+    const GEMINI_KEY = localStorage.getItem('gemini_api_key');
+    if (!GEMINI_KEY) {
+        return alert('❌ Gemini API Key girilmemiş!\n\nAyarlar sayfasından API Key ekleyin.');
+    }
+    
     let sum = 0, cnt = 0;
     DEPTS.forEach(d => {
         const r = getRating(survey, d.key);
         if (r > 0) { sum += r; cnt++; }
     });
     const avgScore = cnt > 0 ? sum / cnt : 0;
+    const avgPct = (avgScore / 5 * 100).toFixed(0);
     
     const btn = event.target;
     const originalText = btn.textContent;
@@ -973,43 +1028,124 @@ window.analyzeWithAI = async function(surveyId) {
     btn.textContent = '⏳ Analiz ediliyor...';
     
     try {
+        // Departman puanlarını hazırla
+        const ratingsText = DEPTS.map(d => {
+            const r = getRating(survey, d.key);
+            return r > 0 ? `- ${d.name}: ${r}★` : '';
+        }).filter(Boolean).join('\n');
+        
+        // Gemini'ye gönderilecek prompt
+        const prompt = `Bir otel misafir anketini analiz et ve sadece JSON formatında yanıt ver.
+
+ANKET BİLGİLERİ:
+Oda: ${survey.room_number}
+Ortalama Puan: ${avgScore.toFixed(1)}/5 (%${avgPct})
+
+Departman Puanları:
+${ratingsText}
+
+Misafir Yorumu:
+"${survey.comments || 'Yorum yok'}"
+
+GÖREV:
+1. Duygu analizi: positive/negative/neutral/mixed
+2. Aciliyet: low/medium/high/critical
+3. Kategori: cleaning/service/food/technical/reception/general
+4. Türkçe özet (1-2 cümle)
+5. Sorunlar listesi
+6. Somut öneriler
+
+SADECE bu JSON formatında yanıt ver:
+{
+  "sentiment": "negative",
+  "urgency": "high",
+  "category": "cleaning",
+  "summary": "Misafir temizlikten memnun değil",
+  "issues": [
+    {
+      "issue": "Oda temizliği yetersiz",
+      "department": "Temizlik",
+      "severity": "high",
+      "evidence": "Yorumdan alıntı"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "Oda ${survey.room_number}'i kontrol et",
+      "priority": "immediate",
+      "assignTo": "Temizlik Müdürü",
+      "estimatedTime": "30 dakika"
+    }
+  ]
+}`;
+
+        // Gemini API çağrısı - DOĞRU FORMAT
         const response = await fetch(
-            'https://hxjpzgqrylmcwabkfnqc.supabase.co/functions/v1/analyze-survey',
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`,
             {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${supabase.supabaseKey}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    surveyId: survey.id,
-                    roomNumber: survey.room_number,
-                    email: survey.email || '',
-                    comments: survey.comments || 'Yorum yok',
-                    ratings: survey.ratings || {},
-                    avgScore: avgScore
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.4,
+                        topK: 32,
+                        topP: 1,
+                        maxOutputTokens: 1024
+                    }
                 })
             }
         );
         
-        const result = await response.json();
-        
-        if (result.success) {
-            const a = result.analysis;
-            alert(`✅ AI Analizi Tamamlandı!\n\n` + 
-                  `Duygu: ${a.sentiment}\n` +
-                  `Aciliyet: ${a.urgency}\n` +
-                  `Kategori: ${a.category}\n\n` +
-                  `Özet: ${a.summary}\n\n` +
-                  `Detayları görmek için "AI Analizler" sayfasına gidin.`);
-            
-            await loadAIAnalyses();
-        } else {
-            throw new Error(result.error || 'Analiz başarısız');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || 'Gemini API hatası');
         }
+        
+        const data = await response.json();
+        const aiText = data.candidates[0].content.parts[0].text;
+        
+        // JSON parse et
+        let analysis;
+        try {
+            const cleaned = aiText.replace(/```json\n?|\n?```/g, '').trim();
+            analysis = JSON.parse(cleaned);
+        } catch (e) {
+            console.error('JSON parse hatası:', aiText);
+            throw new Error('AI yanıtı JSON formatında değil');
+        }
+        
+        // Supabase'e kaydet
+        const { data: savedAnalysis, error: dbError } = await supabase
+            .from('ai_analyses')
+            .insert([{
+                survey_id: survey.id,
+                sentiment: analysis.sentiment,
+                urgency: analysis.urgency,
+                category: analysis.category,
+                summary: analysis.summary,
+                issues: analysis.issues,
+                recommendations: analysis.recommendations,
+                model_used: 'gemini-1.5-flash-latest'
+            }])
+            .select();
+        
+        if (dbError) throw dbError;
+        
+        alert(`✅ AI Analizi Tamamlandı!\n\n` + 
+              `Duygu: ${analysis.sentiment}\n` +
+              `Aciliyet: ${analysis.urgency}\n` +
+              `Kategori: ${analysis.category}\n\n` +
+              `Özet: ${analysis.summary}\n\n` +
+              `Detayları "AI Analizler" sayfasında görebilirsiniz.`);
+        
+        await loadAIAnalyses();
+        
     } catch (error) {
         console.error('AI Analiz hatası:', error);
-        alert('❌ AI analizi başarısız:\n\n' + error.message + '\n\nEdge Function deploy edildi mi?\nGEMINI_API_KEY secret ekli mi?');
+        alert(`❌ AI analizi başarısız:\n\n${error.message}\n\nAPI Key doğru mu?\nİnternet bağlantısı var mı?`);
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
