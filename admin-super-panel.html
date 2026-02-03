@@ -318,6 +318,14 @@ Groq API Key'inizi girin.
 <!-- AI ANALIZLER -->
 <div id="ai-analyses" class="page">
 <div class="page-header"><h2>🤖 AI Analizler</h2><p>Yapay zeka destekli yorum analizi</p></div>
+
+<div class="stats-grid" style="margin-bottom:20px">
+<div class="stat-card"><div class="s-icon">🤖</div><div class="s-label">Toplam Analiz</div><div class="s-value" id="ai-total">0</div></div>
+<div class="stat-card danger"><div class="s-icon">🔴</div><div class="s-label">Kritik/Yüksek</div><div class="s-value" id="ai-urgent">0</div></div>
+<div class="stat-card warning"><div class="s-icon">😠</div><div class="s-label">Olumsuz</div><div class="s-value" id="ai-negative">0</div></div>
+<div class="stat-card success"><div class="s-icon">😊</div><div class="s-label">Olumlu</div><div class="s-value" id="ai-positive">0</div></div>
+</div>
+
 <div class="controls" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap">
 <button class="btn btn-info" onclick="loadAIAnalyses()">🔄 Yenile</button>
 <select id="aiFilterUrgency" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
@@ -1151,10 +1159,23 @@ async function loadAIAnalyses() {
         
         allAIAnalyses = data || [];
         console.log('✅ AI Analizler yüklendi:', allAIAnalyses.length);
+        updateAIStats();
         renderAIAnalyses();
     } catch (e) {
         console.error('AI analizleri yükleme hatası:', e);
     }
+}
+
+function updateAIStats() {
+    const total = allAIAnalyses.length;
+    const urgent = allAIAnalyses.filter(a => a.urgency === 'critical' || a.urgency === 'high').length;
+    const negative = allAIAnalyses.filter(a => a.sentiment === 'negative').length;
+    const positive = allAIAnalyses.filter(a => a.sentiment === 'positive').length;
+    
+    document.getElementById('ai-total').textContent = total;
+    document.getElementById('ai-urgent').textContent = urgent;
+    document.getElementById('ai-negative').textContent = negative;
+    document.getElementById('ai-positive').textContent = positive;
 }
 
 function renderAIAnalyses() {
@@ -1229,6 +1250,11 @@ function renderAIAnalysisCard(analysis) {
                 <div style="text-align:right">
                     <div class="date-badge">${date}</div>
                     <div class="date-badge" style="margin-top:4px">📊 ${analysis.category || 'general'}</div>
+                    ${curUser && curUser.role === 'admin' ? `
+                        <button class="btn btn-danger" style="margin-top:8px;font-size:11px;padding:6px 12px" onclick="deleteAIAnalysis('${analysis.id}','${survey.room_number || '?'}')">
+                            🗑️ Sil
+                        </button>
+                    ` : ''}
                 </div>
             </div>
             
@@ -1274,6 +1300,41 @@ function renderAIAnalysisCard(analysis) {
 
 function filterAIAnalyses() {
     renderAIAnalyses();
+}
+
+// AI Analiz silme (sadece admin)
+window.deleteAIAnalysis = async function(analysisId, roomNumber) {
+    if (!curUser || curUser.role !== 'admin') {
+        return alert('❌ Sadece adminler AI analizlerini silebilir!');
+    }
+    
+    if (!confirm(`Oda ${roomNumber} için AI analizini silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_analyses')
+            .delete()
+            .eq('id', analysisId);
+        
+        if (error) throw error;
+        
+        // Local listeden kaldır
+        allAIAnalyses = allAIAnalyses.filter(a => a.id !== analysisId);
+        
+        // Sayfayı yenile
+        renderAIAnalyses();
+        
+        console.log('✅ AI analizi silindi:', analysisId);
+        
+        // Başarı mesajı
+        alert('✅ AI analizi başarıyla silindi!');
+        
+    } catch (error) {
+        console.error('AI analiz silme hatası:', error);
+        alert('❌ AI analizi silinemedi:\n\n' + error.message);
+    }
 }
 
 if(!checkSession()){}
