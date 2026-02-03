@@ -326,8 +326,25 @@ Groq API Key'inizi girin.
 <div class="stat-card success"><div class="s-icon">😊</div><div class="s-label">Olumlu</div><div class="s-value" id="ai-positive">0</div></div>
 </div>
 
-<div class="controls" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap">
+<div class="controls" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
 <button class="btn btn-info" onclick="loadAIAnalyses()">🔄 Yenile</button>
+
+<select id="aiFilterDate" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
+<option value="all">📅 Tüm Zamanlar</option>
+<option value="today">📅 Bugün</option>
+<option value="yesterday">📅 Dün</option>
+<option value="week">📅 Bu Hafta</option>
+<option value="month">📅 Bu Ay</option>
+<option value="custom">📅 Tarih Aralığı</option>
+</select>
+
+<div id="aiCustomDateRange" style="display:none;gap:8px;align-items:center">
+<input type="date" id="aiStartDate" style="padding:8px;border-radius:8px;border:2px solid #e0e0e0;font-size:13px">
+<span style="color:#666">-</span>
+<input type="date" id="aiEndDate" style="padding:8px;border-radius:8px;border:2px solid #e0e0e0;font-size:13px">
+<button class="btn btn-primary" onclick="applyAIDateRange()" style="padding:8px 16px;font-size:13px">Uygula</button>
+</div>
+
 <select id="aiFilterUrgency" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
 <option value="all">Tüm Öncelikler</option>
 <option value="critical">🔴 Kritik</option>
@@ -335,6 +352,7 @@ Groq API Key'inizi girin.
 <option value="medium">🟡 Orta</option>
 <option value="low">🟢 Düşük</option>
 </select>
+
 <select id="aiFilterSentiment" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
 <option value="all">Tüm Duygular</option>
 <option value="negative">😠 Olumsuz</option>
@@ -1014,6 +1032,7 @@ supabase.channel('realtime-surveys')
 // ═══════════════════════════════════════════════════════════
 
 let allAIAnalyses = [];
+let aiCustomDateRange = null;
 
 window.analyzeWithAI = async function(surveyId) {
     const survey = allSurveys.find(s => s.id === surveyId);
@@ -1113,28 +1132,64 @@ SADECE bu JSON'u döndür (başka açıklama ekleme):
             throw new Error('AI yanıtı JSON formatında değil: ' + aiText.substring(0, 100));
         }
         
-        // Supabase'e kaydet
-        const { data: savedAnalysis, error: dbError } = await supabase
+        // Önce bu anket için analiz var mı kontrol et
+        const { data: existingAnalysis } = await supabase
             .from('ai_analyses')
-            .insert([{
-                survey_id: survey.id,
-                sentiment: analysis.sentiment,
-                urgency: analysis.urgency,
-                category: analysis.category,
-                summary: analysis.summary,
-                issues: analysis.issues || [],
-                recommendations: analysis.recommendations || [],
-                model_used: 'llama-3.3-70b'
-            }])
-            .select();
+            .select('id')
+            .eq('survey_id', survey.id)
+            .single();
         
-        if (dbError) throw dbError;
+        let savedAnalysis;
+        
+        if (existingAnalysis) {
+            // Varsa güncelle
+            const { data, error: dbError } = await supabase
+                .from('ai_analyses')
+                .update({
+                    sentiment: analysis.sentiment,
+                    urgency: analysis.urgency,
+                    category: analysis.category,
+                    summary: analysis.summary,
+                    issues: analysis.issues || [],
+                    recommendations: analysis.recommendations || [],
+                    model_used: 'llama-3.3-70b',
+                    analyzed_at: new Date().toISOString()
+                })
+                .eq('survey_id', survey.id)
+                .select();
+            
+            if (dbError) throw dbError;
+            savedAnalysis = data;
+            
+            console.log('✅ Analiz güncellendi');
+        } else {
+            // Yoksa yeni ekle
+            const { data, error: dbError } = await supabase
+                .from('ai_analyses')
+                .insert([{
+                    survey_id: survey.id,
+                    sentiment: analysis.sentiment,
+                    urgency: analysis.urgency,
+                    category: analysis.category,
+                    summary: analysis.summary,
+                    issues: analysis.issues || [],
+                    recommendations: analysis.recommendations || [],
+                    model_used: 'llama-3.3-70b'
+                }])
+                .select();
+            
+            if (dbError) throw dbError;
+            savedAnalysis = data;
+            
+            console.log('✅ Yeni analiz oluşturuldu');
+        }
         
         alert(`✅ AI Analizi Tamamlandı!\n\n` + 
               `Duygu: ${analysis.sentiment}\n` +
               `Aciliyet: ${analysis.urgency}\n` +
               `Kategori: ${analysis.category}\n\n` +
               `Özet: ${analysis.summary}\n\n` +
+              `${existingAnalysis ? '(Mevcut analiz güncellendi)' : '(Yeni analiz oluşturuldu)'}\n\n` +
               `Detayları "AI Analizler" sayfasında görebilirsiniz.`);
         
         await loadAIAnalyses();
@@ -1184,13 +1239,49 @@ function renderAIAnalyses() {
     
     let filtered = allAIAnalyses;
     
-    const urgencyFilter = document.getElementById('aiFilterUrgency')?.value;
-    const sentimentFilter = document.getElementById('aiFilterSentiment')?.value;
+    // Tarih filtresi
+    const dateFilter = document.getElementById('aiFilterDate')?.value;
+    if (dateFilter && dateFilter !== 'all') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        filtered = filtered.filter(a => {
+            const date = new Date(a.analyzed_at);
+            date.setHours(0, 0, 0, 0);
+            
+            if (dateFilter === 'today') {
+                return date.getTime() === today.getTime();
+            } else if (dateFilter === 'yesterday') {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                return date.getTime() === yesterday.getTime();
+            } else if (dateFilter === 'week') {
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return date >= weekAgo;
+            } else if (dateFilter === 'month') {
+                const monthAgo = new Date(today);
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+                return date >= monthAgo;
+            } else if (dateFilter === 'custom' && aiCustomDateRange) {
+                const start = new Date(aiCustomDateRange.start);
+                const end = new Date(aiCustomDateRange.end);
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+                return date >= start && date <= end;
+            }
+            return true;
+        });
+    }
     
+    // Aciliyet filtresi
+    const urgencyFilter = document.getElementById('aiFilterUrgency')?.value;
     if (urgencyFilter && urgencyFilter !== 'all') {
         filtered = filtered.filter(a => a.urgency === urgencyFilter);
     }
     
+    // Duygu filtresi
+    const sentimentFilter = document.getElementById('aiFilterSentiment')?.value;
     if (sentimentFilter && sentimentFilter !== 'all') {
         filtered = filtered.filter(a => a.sentiment === sentimentFilter);
     }
@@ -1200,7 +1291,7 @@ function renderAIAnalyses() {
             <div class="empty-state">
                 <div class="e-icon">🤖</div>
                 <h2>AI analizi yok</h2>
-                <p>Anketlere "🤖 Analiz Et" butonu ile AI analizi yapabilirsiniz</p>
+                <p>Seçilen filtrelere uygun analiz bulunamadı</p>
             </div>`;
         return;
     }
@@ -1299,6 +1390,42 @@ function renderAIAnalysisCard(analysis) {
 }
 
 function filterAIAnalyses() {
+    // Tarih aralığı göster/gizle
+    const dateFilter = document.getElementById('aiFilterDate')?.value;
+    const customRange = document.getElementById('aiCustomDateRange');
+    
+    if (dateFilter === 'custom') {
+        customRange.style.display = 'flex';
+        // Bugünün tarihini varsayılan olarak ayarla
+        const today = new Date().toISOString().split('T')[0];
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        document.getElementById('aiStartDate').value = weekAgo.toISOString().split('T')[0];
+        document.getElementById('aiEndDate').value = today;
+    } else {
+        customRange.style.display = 'none';
+        aiCustomDateRange = null;
+    }
+    
+    renderAIAnalyses();
+}
+
+// Özel tarih aralığını uygula
+window.applyAIDateRange = function() {
+    const startDate = document.getElementById('aiStartDate').value;
+    const endDate = document.getElementById('aiEndDate').value;
+    
+    if (!startDate || !endDate) {
+        alert('⚠️ Lütfen başlangıç ve bitiş tarihlerini seçin!');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('⚠️ Başlangıç tarihi bitiş tarihinden önce olmalı!');
+        return;
+    }
+    
+    aiCustomDateRange = { start: startDate, end: endDate };
     renderAIAnalyses();
 }
 
