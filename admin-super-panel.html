@@ -261,15 +261,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <div class="page-header"><h2>⚙️ Ayarlar</h2><p>Anket soruları ve sistem ayarları</p></div>
 
 <div class="add-user-form" style="background:#f0f9ff;border:2px solid #3b82f6">
-<h3>🤖 AI Analiz Ayarları</h3>
-<p style="color:#666;font-size:13px;margin-bottom:12px">Google Gemini API Key'inizi girin. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#3b82f6">API Key almak için tıklayın</a></p>
+<h3>🤖 AI Analiz Ayarları (GROQ - Ücretsiz & Hızlı!)</h3>
+<p style="color:#666;font-size:13px;margin-bottom:12px">
+Groq API Key'inizi girin. 
+<a href="https://console.groq.com/keys" target="_blank" style="color:#3b82f6;font-weight:600">👉 API Key almak için tıklayın (ücretsiz)</a>
+</p>
 <div class="form-row">
-<input type="text" id="geminiApiKey" placeholder="AIzaSy..." style="flex:1">
-<button class="btn btn-primary" onclick="saveGeminiKey()">💾 Kaydet</button>
+<input type="text" id="groqApiKey" placeholder="gsk_..." style="flex:1">
+<button class="btn btn-primary" onclick="saveGroqKey()">💾 Kaydet</button>
 </div>
-<div class="login-error" id="geminiKeyError" style="margin-top:12px"></div>
-<div id="geminiKeyStatus" style="margin-top:12px;display:none;padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;color:#059669">
-✅ API Key kaydedildi! Artık AI analiz yapabilirsiniz.
+<div class="login-error" id="groqKeyError" style="margin-top:12px"></div>
+<div id="groqKeyStatus" style="margin-top:12px;display:none;padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;color:#059669">
+✅ API Key kaydedildi! Artık AI analiz yapabilirsiniz. (Model: Llama 3.3 70B)
 </div>
 </div>
 
@@ -481,7 +484,7 @@ window.nav=function(el,pageId){
     }
     if(pageId==='users')renderUsers();
     if(pageId==='emails')renderEmails();
-    if(pageId==='settings'){renderQuestions();loadGeminiKey();}
+    if(pageId==='settings'){renderQuestions();loadGroqKey();}
 }
 
 function updateDashboard(){
@@ -856,11 +859,11 @@ window.deleteQuestion=async function(idx,name){
     }catch(e){console.error(e);alert('Silme başarısız: '+e.message)}
 }
 
-// Gemini API Key kaydetme
-window.saveGeminiKey=function(){
-    const key=document.getElementById('geminiApiKey').value.trim();
-    const errEl=document.getElementById('geminiKeyError');
-    const statusEl=document.getElementById('geminiKeyStatus');
+// Groq API Key kaydetme
+window.saveGroqKey=function(){
+    const key=document.getElementById('groqApiKey').value.trim();
+    const errEl=document.getElementById('groqKeyError');
+    const statusEl=document.getElementById('groqKeyStatus');
     
     errEl.classList.remove('show');
     statusEl.style.display='none';
@@ -871,23 +874,23 @@ window.saveGeminiKey=function(){
         return;
     }
     
-    if(!key.startsWith('AIzaSy')){
-        errEl.textContent='⚠️ Geçersiz API Key formatı! "AIzaSy..." ile başlamalı.';
+    if(!key.startsWith('gsk_')){
+        errEl.textContent='⚠️ Geçersiz API Key formatı! "gsk_..." ile başlamalı.';
         errEl.classList.add('show');
         return;
     }
     
-    localStorage.setItem('gemini_api_key',key);
+    localStorage.setItem('groq_api_key',key);
     statusEl.style.display='block';
     setTimeout(()=>statusEl.style.display='none',5000);
 }
 
 // Sayfa yüklendiğinde key'i göster
-function loadGeminiKey(){
-    const key=localStorage.getItem('gemini_api_key');
+function loadGroqKey(){
+    const key=localStorage.getItem('groq_api_key');
     if(key){
-        document.getElementById('geminiApiKey').value=key;
-        document.getElementById('geminiKeyStatus').style.display='block';
+        document.getElementById('groqApiKey').value=key;
+        document.getElementById('groqKeyStatus').style.display='block';
     }
 }
 
@@ -1008,10 +1011,10 @@ window.analyzeWithAI = async function(surveyId) {
     const survey = allSurveys.find(s => s.id === surveyId);
     if (!survey) return alert('Anket bulunamadı!');
     
-    // Gemini API Key - Ayarlar sayfasından alınacak (localStorage)
-    const GEMINI_KEY = localStorage.getItem('gemini_api_key');
-    if (!GEMINI_KEY) {
-        return alert('❌ Gemini API Key girilmemiş!\n\nAyarlar sayfasından API Key ekleyin.');
+    // Groq API Key - Ayarlar sayfasından alınacak
+    const GROQ_KEY = localStorage.getItem('groq_api_key');
+    if (!GROQ_KEY) {
+        return alert('❌ Groq API Key girilmemiş!\n\nAyarlar sayfasından API Key ekleyin.\n\nhttps://console.groq.com/keys');
     }
     
     let sum = 0, cnt = 0;
@@ -1034,78 +1037,63 @@ window.analyzeWithAI = async function(surveyId) {
             return r > 0 ? `- ${d.name}: ${r}★` : '';
         }).filter(Boolean).join('\n');
         
-        // Gemini'ye gönderilecek prompt
-        const prompt = `Bir otel misafir anketini analiz et ve sadece JSON formatında yanıt ver.
+        // AI'ye gönderilecek mesaj
+        const userMessage = `Bir otel misafir anketini analiz et ve SADECE JSON formatında yanıt ver.
 
-ANKET BİLGİLERİ:
+ANKET:
 Oda: ${survey.room_number}
-Ortalama Puan: ${avgScore.toFixed(1)}/5 (%${avgPct})
+Puan: ${avgScore.toFixed(1)}/5 (%${avgPct})
 
-Departman Puanları:
+Puanlar:
 ${ratingsText}
 
-Misafir Yorumu:
-"${survey.comments || 'Yorum yok'}"
+Yorum: "${survey.comments || 'Yorum yok'}"
 
-GÖREV:
-1. Duygu analizi: positive/negative/neutral/mixed
-2. Aciliyet: low/medium/high/critical
-3. Kategori: cleaning/service/food/technical/reception/general
-4. Türkçe özet (1-2 cümle)
-5. Sorunlar listesi
-6. Somut öneriler
-
-SADECE bu JSON formatında yanıt ver:
+SADECE bu JSON'u döndür (başka açıklama ekleme):
 {
-  "sentiment": "negative",
-  "urgency": "high",
-  "category": "cleaning",
-  "summary": "Misafir temizlikten memnun değil",
+  "sentiment": "positive/negative/neutral/mixed",
+  "urgency": "low/medium/high/critical",
+  "category": "cleaning/service/food/technical/reception/general",
+  "summary": "Türkçe kısa özet (1-2 cümle)",
   "issues": [
-    {
-      "issue": "Oda temizliği yetersiz",
-      "department": "Temizlik",
-      "severity": "high",
-      "evidence": "Yorumdan alıntı"
-    }
+    {"issue": "Sorun açıklaması", "department": "Departman", "severity": "low/medium/high", "evidence": "Kanıt"}
   ],
   "recommendations": [
-    {
-      "action": "Oda ${survey.room_number}'i kontrol et",
-      "priority": "immediate",
-      "assignTo": "Temizlik Müdürü",
-      "estimatedTime": "30 dakika"
-    }
+    {"action": "Yapılacak iş", "priority": "low/medium/high/immediate", "assignTo": "Kişi/Departman", "estimatedTime": "Süre"}
   ]
 }`;
 
-        // Gemini API çağrısı - DOĞRU FORMAT
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.4,
-                        topK: 32,
-                        topP: 1,
-                        maxOutputTokens: 1024
+        // Groq API çağrısı
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Sen bir otel yönetim asistanısın. Misafir anketlerini analiz edip JSON formatında sonuç döndürüyorsun. Sadece JSON yanıt ver, başka açıklama ekleme.'
+                    },
+                    {
+                        role: 'user',
+                        content: userMessage
                     }
-                })
-            }
-        );
+                ],
+                temperature: 0.3,
+                max_tokens: 1000
+            })
+        });
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'Gemini API hatası');
+            throw new Error(errorData.error?.message || 'Groq API hatası');
         }
         
         const data = await response.json();
-        const aiText = data.candidates[0].content.parts[0].text;
+        const aiText = data.choices[0].message.content;
         
         // JSON parse et
         let analysis;
@@ -1114,7 +1102,7 @@ SADECE bu JSON formatında yanıt ver:
             analysis = JSON.parse(cleaned);
         } catch (e) {
             console.error('JSON parse hatası:', aiText);
-            throw new Error('AI yanıtı JSON formatında değil');
+            throw new Error('AI yanıtı JSON formatında değil: ' + aiText.substring(0, 100));
         }
         
         // Supabase'e kaydet
@@ -1126,9 +1114,9 @@ SADECE bu JSON formatında yanıt ver:
                 urgency: analysis.urgency,
                 category: analysis.category,
                 summary: analysis.summary,
-                issues: analysis.issues,
-                recommendations: analysis.recommendations,
-                model_used: 'gemini-1.5-flash'
+                issues: analysis.issues || [],
+                recommendations: analysis.recommendations || [],
+                model_used: 'llama-3.3-70b'
             }])
             .select();
         
@@ -1145,7 +1133,7 @@ SADECE bu JSON formatında yanıt ver:
         
     } catch (error) {
         console.error('AI Analiz hatası:', error);
-        alert(`❌ AI analizi başarısız:\n\n${error.message}\n\nAPI Key doğru mu?\nİnternet bağlantısı var mı?`);
+        alert(`❌ AI analizi başarısız:\n\n${error.message}\n\nAPI Key doğru mu kontrol edin.`);
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
