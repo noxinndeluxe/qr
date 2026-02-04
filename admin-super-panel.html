@@ -886,38 +886,77 @@ window.deleteQuestion=async function(idx,name){
 }
 
 // Groq API Key kaydetme
-window.saveGroqKey=function(){
-    const key=document.getElementById('groqApiKey').value.trim();
-    const errEl=document.getElementById('groqKeyError');
-    const statusEl=document.getElementById('groqKeyStatus');
+window.saveGroqKey = async function() {
+    const key = document.getElementById('groqApiKey').value.trim();
+    const errEl = document.getElementById('groqKeyError');
+    const statusEl = document.getElementById('groqKeyStatus');
     
     errEl.classList.remove('show');
-    statusEl.style.display='none';
+    statusEl.style.display = 'none';
     
-    if(!key){
-        errEl.textContent='⚠️ API Key girin!';
+    if (!key) {
+        errEl.textContent = '⚠️ API Key girin!';
         errEl.classList.add('show');
         return;
     }
     
-    if(!key.startsWith('gsk_')){
-        errEl.textContent='⚠️ Geçersiz API Key formatı! "gsk_..." ile başlamalı.';
+    if (!key.startsWith('gsk_')) {
+        errEl.textContent = '⚠️ Geçersiz API Key formatı! "gsk_..." ile başlamalı.';
         errEl.classList.add('show');
         return;
     }
     
-    localStorage.setItem('groq_api_key',key);
-    statusEl.style.display='block';
-    setTimeout(()=>statusEl.style.display='none',5000);
+    try {
+        // Supabase ai_settings tablosuna kaydet (upsert)
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert([
+                { 
+                    setting_key: 'groq_api_key', 
+                    setting_value: key,
+                    updated_at: new Date().toISOString(),
+                    updated_by: curUser?.username || 'unknown'
+                }
+            ], { onConflict: 'setting_key' });
+        
+        if (error) throw error;
+        
+        statusEl.style.display = 'block';
+        console.log('✅ API Key Supabase\'e kaydedildi (tüm cihazlardan erişilebilir)');
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+    } catch (error) {
+        console.error('API Key kaydetme hatası:', error);
+        errEl.textContent = '⚠️ Kaydetme hatası: ' + error.message;
+        errEl.classList.add('show');
+    }
 }
 
-// Sayfa yüklendiğinde key'i göster
-function loadGroqKey(){
-    const key=localStorage.getItem('groq_api_key');
-    if(key){
-        document.getElementById('groqApiKey').value=key;
-        document.getElementById('groqKeyStatus').style.display='block';
+// Sayfa yüklendiğinde key'i Supabase'den al
+async function loadGroqKey() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'groq_api_key')
+            .single();
+        
+        if (error) {
+            if (error.code !== 'PGRST116') { // "not found" hatası değilse
+                console.error('API Key yükleme hatası:', error);
+            }
+            return;
+        }
+        
+        if (data && data.setting_value) {
+            document.getElementById('groqApiKey').value = data.setting_value;
+            document.getElementById('groqKeyStatus').style.display = 'block';
+            console.log('✅ API Key Supabase\'den yüklendi (tüm cihazlardan erişilebilir)');
+        }
+    } catch (error) {
+        console.error('API Key yükleme hatası:', error);
     }
+}
 }
 
 function renderUsers(){
@@ -1038,10 +1077,22 @@ window.analyzeWithAI = async function(surveyId) {
     const survey = allSurveys.find(s => s.id === surveyId);
     if (!survey) return alert('Anket bulunamadı!');
     
-    // Groq API Key - Ayarlar sayfasından alınacak
-    const GROQ_KEY = localStorage.getItem('groq_api_key');
-    if (!GROQ_KEY) {
-        return alert('❌ Groq API Key girilmemiş!\n\nAyarlar sayfasından API Key ekleyin.\n\nhttps://console.groq.com/keys');
+    // Groq API Key - Supabase'den al
+    let GROQ_KEY;
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'groq_api_key')
+            .single();
+        
+        if (error || !data || !data.setting_value) {
+            return alert('❌ Groq API Key girilmemiş!\n\nAyarlar sayfasından API Key ekleyin.\n\nhttps://console.groq.com/keys');
+        }
+        
+        GROQ_KEY = data.setting_value;
+    } catch (error) {
+        return alert('❌ API Key yüklenemedi:\n\n' + error.message);
     }
     
     let sum = 0, cnt = 0;
