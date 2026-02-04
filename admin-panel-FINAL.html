@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Otel Yönetim Paneli Pro</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#1e3c72,#2a5298);min-height:100vh}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:white;border-radius:24px;padding:50px 40px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center}
+.login-box .logo{font-size:56px;margin-bottom:10px}
+.login-box h1{color:#1e3c72;font-size:24px;margin-bottom:6px}
+.login-box .sub{color:#888;font-size:14px;margin-bottom:30px}
+.login-input{width:100%;padding:14px 18px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;font-family:inherit;margin-bottom:14px;transition:border-color .3s}
+.login-input:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:all .3s;margin-top:6px}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(102,126,234,.4)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-error{background:#fee2e2;color:#dc2626;border:2px solid #ef4444;padding:10px 14px;border-radius:8px;font-size:13px;display:none;margin-bottom:16px}
+.login-error.show{display:block}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#1a2332;padding:20px 0;box-shadow:4px 0 10px rgba(0,0,0,.2);z-index:1000}
+.sidebar-logo{padding:0 20px 18px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:18px}
+.sidebar-logo h1{color:white;font-size:20px;display:flex;align-items:center;gap:10px}
+.menu-item{padding:13px 20px;color:rgba(255,255,255,.65);cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:12px;font-size:14px;border-left:3px solid transparent}
+.menu-item:hover{background:rgba(255,255,255,.06);color:white}
+.menu-item.active{background:rgba(102,126,234,.2);color:white;border-left-color:#667eea}
+.menu-item .icon{font-size:18px;width:22px;text-align:center}
+.sidebar-bottom{position:absolute;bottom:0;left:0;right:0;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px}
+.user-name{color:white;font-size:13px;font-weight:600}
+.user-role{color:rgba(255,255,255,.5);font-size:11px}
+.logout-btn{width:100%;padding:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:6px;font-size:12px;cursor:pointer;transition:all .2s}
+.logout-btn:hover{background:rgba(239,68,68,.3);color:white}
+.main{margin-left:240px;padding:28px;min-height:100vh}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{background:white;padding:22px 28px;border-radius:14px;margin-bottom:22px;box-shadow:0 3px 16px rgba(0,0,0,.08)}
+.page-header h2{color:#1e3c72;font-size:24px;margin-bottom:4px}
+.page-header p{color:#777;font-size:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:22px}
+.stat-card{background:white;padding:22px;border-radius:14px;box-shadow:0 3px 14px rgba(0,0,0,.08);transition:all .25s}
+.stat-card:hover{transform:translateY(-4px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
+.stat-card .s-icon{font-size:30px;margin-bottom:8px}
+.stat-card .s-label{font-size:12px;color:#888;margin-bottom:6px}
+.stat-card .s-value{font-size:28px;font-weight:700;color:#1e3c72}
+.stat-card.success .s-value{color:#10b981}
+.stat-card.warning .s-value{color:#f59e0b}
+.stat-card.danger .s-value{color:#ef4444}
+.controls{background:white;padding:16px 20px;border-radius:10px;margin-bottom:18px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.ctrl-group{display:flex;flex-direction:column;gap:4px}
+.ctrl-group label{font-size:12px;color:#888;font-weight:600}
+input[type="date"],input[type="text"],input[type="email"],input[type="password"],select,textarea{padding:9px 12px;border:2px solid #e0e0e0;border-radius:7px;font-size:13px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
+.filter-btn{padding:8px 16px;border:2px solid #e0e0e0;background:white;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:#666;transition:all .2s}
+.filter-btn.active{background:#1e3c72;color:white;border-color:#1e3c72}
+.filter-btn:hover{border-color:#667eea}
+.btn{padding:9px 20px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(102,126,234,.4)}
+.btn-success{background:#10b981;color:white}
+.btn-success:hover{background:#059669}
+.btn-danger{background:#ef4444;color:white;font-size:11px;padding:6px 12px}
+.btn-danger:hover{background:#dc2626}
+.btn-warning{background:#f59e0b;color:white;font-size:11px;padding:6px 12px}
+.btn-warning:hover{background:#d97706}
+.btn-info{background:#3b82f6;color:white;font-size:11px;padding:6px 12px}
+.btn-info:hover{background:#2563eb}
+.divider{border-left:2px solid #e8e8e8;height:28px}
+.quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.action-card{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:22px;border-radius:14px;cursor:pointer;transition:all .25s;text-align:center}
+.action-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(102,126,234,.4)}
+.action-card .a-icon{font-size:40px;margin-bottom:8px}
+.action-card h3{font-size:16px;margin-bottom:4px}
+.action-card p{font-size:12px;opacity:.85}
+.chart-wrap{background:white;padding:22px;border-radius:14px;margin-bottom:22px;box-shadow:0 3px 14px rgba(0,0,0,.08)}
+.chart-wrap h3{color:#1e3c72;margin-bottom:16px;font-size:17px}
+.bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:220px;gap:10px;padding:16px 0 30px}
+.bar{flex:1;border-radius:6px 6px 0 0;position:relative;transition:all .5s;min-width:30px;cursor:pointer}
+.bar.green{background:linear-gradient(to top,#10b981,#059669)}
+.bar.red{background:linear-gradient(to top,#ef4444,#dc2626)}
+.bar:hover{opacity:.75;transform:translateY(-4px)}
+.bar-label{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-size:10px;color:#666;white-space:nowrap;font-weight:600;text-align:center}
+.bar-value{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-weight:700;font-size:12px}
+.bar-value.green{color:#10b981}
+.bar-value.red{color:#ef4444}
+.dept-card{background:white;border-radius:14px;padding:22px;box-shadow:0 3px 14px rgba(0,0,0,.08);margin-bottom:16px;transition:all .25s}
+.dept-card:hover{transform:translateY(-3px);box-shadow:0 7px 22px rgba(0,0,0,.12)}
+.dept-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f0f0f0}
+.dept-name{font-size:18px;font-weight:700;color:#333}
+.dept-score{font-size:36px;font-weight:700;padding:6px 16px;border-radius:10px}
+.dept-score.excellent{color:#10b981;background:#d1fae5}
+.dept-score.danger{color:#ef4444;background:#fee2e2}
+.dept-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px}
+.detail-item{text-align:center;padding:10px;background:#f8f9ff;border-radius:8px}
+.detail-item .label{font-size:10px;color:#888;margin-bottom:4px}
+.detail-item .value{font-size:18px;font-weight:700;color:#1e3c72}
+.progress-bar{width:100%;height:22px;background:#e8e8e8;border-radius:11px;overflow:hidden}
+.progress-fill{height:100%;transition:width 1s;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px}
+.progress-fill.excellent{background:linear-gradient(135deg,#10b981,#059669)}
+.progress-fill.danger{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.survey-card{background:white;border-radius:14px;padding:18px;box-shadow:0 3px 14px rgba(0,0,0,.08);margin-bottom:14px;position:relative;overflow:hidden}
+.survey-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.survey-card.excellent::before{background:#10b981}
+.survey-card.average::before{background:#f59e0b}
+.survey-card.poor::before{background:#ef4444}
+.survey-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.room-badge{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:7px 14px;border-radius:8px;font-size:16px;font-weight:700}
+.badge-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.date-badge{background:#f3f4f6;padding:5px 10px;border-radius:6px;font-size:11px;color:#666}
+.alert-badge{padding:4px 9px;border-radius:5px;font-size:10px;font-weight:700}
+.alert-badge.warning{background:#fef3c7;color:#d97706}
+.alert-badge.danger{background:#fee2e2;color:#dc2626;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.ratings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:10px}
+.rating-item{text-align:center;padding:8px 4px;background:#f8f9ff;border-radius:7px}
+.rating-item .r-icon{font-size:18px;margin-bottom:2px}
+.rating-item .r-label{font-size:9px;color:#888;margin-bottom:2px}
+.rating-item .r-stars{font-size:12px}
+.comments-section{background:#f8f9ff;padding:10px 14px;border-radius:8px;border-left:3px solid #667eea;margin-top:8px}
+.comments-section .c-title{color:#667eea;font-size:12px;font-weight:600;margin-bottom:5px}
+.comments-section p{color:#444;font-size:13px;line-height:1.5}
+.date-group-header{background:white;padding:12px 18px;border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.date-group-header h3{color:#1e3c72;font-size:16px;margin:0}
+.date-group-header span{background:#f3f4f6;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600}
+.users-table,.emails-table{background:white;border-radius:14px;overflow:hidden;box-shadow:0 3px 14px rgba(0,0,0,.08);margin-bottom:20px}
+.users-table table,.emails-table table{width:100%;border-collapse:collapse}
+.users-table th,.emails-table th{background:#f8f9ff;padding:12px 16px;text-align:left;font-size:12px;color:#888;font-weight:600;border-bottom:2px solid #eee}
+.users-table td,.emails-table td{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#333}
+.users-table tr:last-child td,.emails-table tr:last-child td{border-bottom:none}
+.role-badge{padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600}
+.role-badge.admin{background:#d1fae5;color:#059669}
+.role-badge.user{background:#dbeafe;color:#2563eb}
+.add-user-form{background:white;padding:22px;border-radius:14px;box-shadow:0 3px 14px rgba(0,0,0,.08);margin-bottom:20px}
+.add-user-form h3{color:#1e3c72;font-size:17px;margin-bottom:16px}
+.form-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.form-row input,.form-row select{flex:1;min-width:140px}
+.empty-state{background:white;border-radius:14px;padding:50px 20px;text-align:center;box-shadow:0 3px 14px rgba(0,0,0,.08)}
+.empty-state .e-icon{font-size:56px;margin-bottom:14px}
+.empty-state h2{color:#444;font-size:18px;margin-bottom:6px}
+.empty-state p{color:#999;font-size:14px}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-content{background:white;border-radius:16px;padding:30px;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-content h3{color:#1e3c72;margin-bottom:16px;font-size:20px}
+.modal-content textarea{width:100%;min-height:120px;margin-bottom:16px}
+.modal-buttons{display:flex;gap:12px;justify-content:flex-end}
+@media(max-width:900px){.sidebar{width:64px}.sidebar-logo h1 span:last-child{display:none}.menu-item span:last-child{display:none}.sidebar-bottom .user-name,.sidebar-bottom .user-role,.sidebar-bottom .logout-btn{display:none}.main{margin-left:64px;padding:18px}}
+@media(max-width:600px){.sidebar{width:100%;height:auto;position:relative;display:flex;overflow-x:auto;padding:10px}.sidebar-logo{display:none}.menu-item{flex-direction:column;padding:8px 12px;font-size:10px;gap:4px}.sidebar-bottom{display:none}.main{margin-left:0;padding:12px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+<div class="login-box">
+<div class="logo">🏨</div>
+<h1>Otel Yönetim Paneli Pro</h1>
+<p class="sub">Yönetici hesabınızla giriş yapın</p>
+<div class="login-error" id="loginError"></div>
+<input class="login-input" type="text" id="loginUser" placeholder="Kullanıcı adı" autocomplete="off">
+<input class="login-input" type="password" id="loginPass" placeholder="Şifre" onkeydown="if(event.key==='Enter')login()">
+<button class="login-btn" id="loginBtn" onclick="login()">Giriş Yap</button>
+</div>
+</div>
+
+<!-- PANEL -->
+<div id="panel" style="display:none">
+<div class="sidebar">
+<div class="sidebar-logo"><h1><span>🏨</span> <span>Otel Pro</span></h1></div>
+<div class="menu-item active" data-page="dashboard" onclick="nav(this,'dashboard')"><span class="icon">📊</span><span>Ana Sayfa</span></div>
+<div class="menu-item" data-page="surveys" onclick="nav(this,'surveys')"><span class="icon">📋</span><span>Anketler</span></div>
+<div class="menu-item" data-page="emails" onclick="nav(this,'emails')"><span class="icon">📧</span><span>E-postalar</span></div>
+<div class="menu-item" data-page="reports" onclick="nav(this,'reports')"><span class="icon">📈</span><span>Raporlar</span></div>
+<div class="menu-item" data-page="ai-analyses" onclick="nav(this,'ai-analyses')"><span class="icon">🤖</span><span>AI Analizler</span></div>
+<div class="menu-item" data-page="settings" onclick="nav(this,'settings')"><span class="icon">⚙️</span><span>Ayarlar</span></div>
+<div class="menu-item" data-page="users" onclick="nav(this,'users')"><span class="icon">👥</span><span>Kullanıcılar</span></div>
+<div class="sidebar-bottom">
+<div class="user-info">
+<div class="user-avatar" id="avatarInit">A</div>
+<div><div class="user-name" id="curUserName">admin</div><div class="user-role" id="curUserRole">Admin</div></div>
+</div>
+<button class="logout-btn" onclick="logout()">⤴ Çıkış</button>
+</div>
+</div>
+
+<div class="main">
+<!-- DASHBOARD -->
+<div id="dashboard" class="page active">
+<div class="page-header"><h2>📊 Ana Sayfa</h2><p>Genel bakış</p></div>
+<div class="stats-grid">
+<div class="stat-card"><div class="s-icon">📋</div><div class="s-label">Toplam Anket</div><div class="s-value" id="d-total">0</div></div>
+<div class="stat-card success"><div class="s-icon">⭐</div><div class="s-label">Genel Ortalama</div><div class="s-value" id="d-avg">0.0</div></div>
+<div class="stat-card warning"><div class="s-icon">📅</div><div class="s-label">Bu Hafta</div><div class="s-value" id="d-week">0</div></div>
+<div class="stat-card"><div class="s-icon">🕐</div><div class="s-label">Bugün</div><div class="s-value" id="d-today">0</div></div>
+</div>
+<div class="quick-actions">
+<div class="action-card" onclick="nav(document.querySelector('[data-page=surveys]'),'surveys')"><div class="a-icon">📋</div><h3>Anketler</h3><p>Tüm anketler</p></div>
+<div class="action-card" onclick="nav(document.querySelector('[data-page=emails]'),'emails')"><div class="a-icon">📧</div><h3>E-postalar</h3><p>Misafir mailleri</p></div>
+<div class="action-card" onclick="nav(document.querySelector('[data-page=reports]'),'reports')"><div class="a-icon">📈</div><h3>Raporlar</h3><p>Performans</p></div>
+<div class="action-card" onclick="nav(document.querySelector('[data-page=settings]'),'settings')"><div class="a-icon">⚙️</div><h3>Ayarlar</h3><p>Soru yönetimi</p></div>
+</div>
+<div class="chart-wrap"><h3>📊 Departman Performansı (Son 30 Gün)</h3><div class="bar-chart" id="dashChart"></div></div>
+</div>
+
+<!-- SURVEYS -->
+<div id="surveys" class="page">
+<div class="page-header"><h2>📋 Anket Yönetimi</h2><p>Tüm misafir anketleri</p></div>
+<div class="stats-grid">
+<div class="stat-card"><div class="s-label">Toplam</div><div class="s-value" id="s-total">0</div></div>
+<div class="stat-card success"><div class="s-label">Ortalama</div><div class="s-value" id="s-avg">0.0</div></div>
+<div class="stat-card warning"><div class="s-label">Düşük (≤3★)</div><div class="s-value" id="s-low">0</div></div>
+<div class="stat-card"><div class="s-label">Bugün</div><div class="s-value" id="s-today">0</div></div>
+</div>
+<div class="controls">
+<button class="filter-btn active" data-filter="all" data-type="rating">Tümü</button>
+<button class="filter-btn" data-filter="poor" data-type="rating">Düşük</button>
+<button class="filter-btn" data-filter="excellent" data-type="rating">Yüksek</button>
+<div class="divider"></div>
+<button class="filter-btn" data-date="today" data-type="date">Bugün</button>
+<button class="filter-btn" data-date="yesterday" data-type="date">Dün</button>
+<button class="filter-btn" data-date="week" data-type="date">Hafta</button>
+<button class="filter-btn" data-date="month" data-type="date">Ay</button>
+<div class="divider"></div>
+<div class="ctrl-group"><label>Başlangıç</label><input type="date" id="surveyStartDate"></div>
+<div class="ctrl-group"><label>Bitiş</label><input type="date" id="surveyEndDate"></div>
+<button class="btn btn-primary" onclick="applySurveyDateFilter()">Filtrele</button>
+<button class="btn btn-success" onclick="clearSurveyDateFilter()">Temizle</button>
+</div>
+<div id="surveysGrid"></div>
+</div>
+
+<!-- EMAILS -->
+<div id="emails" class="page">
+<div class="page-header"><h2>📧 E-posta Listesi</h2><p>Tüm misafir e-postaları</p></div>
+<div class="controls">
+<button class="btn btn-success" onclick="exportEmails()">📥 CSV İndir</button>
+<button class="btn btn-primary" onclick="sendBulkReviewRequest()">⭐ Toplu Google Yorum İsteği (%90+)</button>
+</div>
+<div class="emails-table" id="emailsTable"></div>
+</div>
+
+<!-- REPORTS -->
+<div id="reports" class="page">
+<div class="page-header"><h2>📈 Departman Raporu</h2><p>Performans analizi</p></div>
+<div class="controls">
+<div class="ctrl-group"><label>Başlangıç</label><input type="date" id="startDate"></div>
+<div class="ctrl-group"><label>Bitiş</label><input type="date" id="endDate"></div>
+<button class="btn btn-primary" onclick="generateReport()">📊 Rapor Oluştur</button>
+<button class="btn btn-success" onclick="window.print()">🖨️ Yazdır</button>
+</div>
+<div class="stats-grid" id="reportSummary"></div>
+<div class="chart-wrap" id="reportChartWrap" style="display:none"><h3>📊 Departman Performans Grafiği</h3><div class="bar-chart" id="reportChart"></div></div>
+<div id="departmentsGrid"></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings" class="page">
+<div class="page-header"><h2>⚙️ Ayarlar</h2><p>Anket soruları ve sistem ayarları</p></div>
+
+<div class="add-user-form" style="background:#f0f9ff;border:2px solid #3b82f6">
+<h3>🤖 AI Analiz Ayarları (GROQ - Ücretsiz & Hızlı!)</h3>
+<p style="color:#666;font-size:13px;margin-bottom:12px">
+Groq API Key'inizi girin. 
+<a href="https://console.groq.com/keys" target="_blank" style="color:#3b82f6;font-weight:600">👉 API Key almak için tıklayın (ücretsiz)</a>
+</p>
+<div class="form-row">
+<input type="text" id="groqApiKey" placeholder="gsk_..." style="flex:1">
+<button class="btn btn-primary" onclick="saveGroqKey()">💾 Kaydet</button>
+</div>
+<div class="login-error" id="groqKeyError" style="margin-top:12px"></div>
+<div id="groqKeyStatus" style="margin-top:12px;display:none;padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;color:#059669">
+✅ API Key kaydedildi! Artık AI analiz yapabilirsiniz. (Model: Llama 3.3 70B)
+</div>
+</div>
+
+<div class="add-user-form">
+<h3>➕ Yeni Soru Ekle</h3>
+<div class="form-row">
+<input type="text" id="newQKey" placeholder="Anahtar (dept_xyz)">
+<input type="text" id="newQIcon" placeholder="Emoji" maxlength="4" style="max-width:80px">
+<input type="text" id="newQName" placeholder="Soru metni">
+<button class="btn btn-primary" onclick="addQuestion()">Ekle</button>
+</div>
+<div class="login-error" id="addQError" style="margin-top:12px"></div>
+</div>
+<div class="users-table" id="questionsTable"></div>
+</div>
+
+<!-- USERS -->
+<div id="users" class="page">
+<div class="page-header"><h2>👥 Kullanıcı Yönetimi</h2><p>Yönetici hesapları</p></div>
+<div class="add-user-form">
+<h3>🔑 Şifremi Değiştir</h3>
+<div class="form-row">
+<input type="password" id="oldPassword" placeholder="Mevcut şifre">
+<input type="password" id="newPasswordChange" placeholder="Yeni şifre">
+<input type="password" id="confirmPassword" placeholder="Yeni şifre (tekrar)">
+<button class="btn btn-primary" onclick="changePassword()">Değiştir</button>
+</div>
+<div class="login-error" id="changePassError" style="margin-top:12px"></div>
+</div>
+<div class="add-user-form" id="addUserForm">
+<h3>➕ Yeni Kullanıcı Ekle</h3>
+<div class="form-row">
+<input type="text" id="newUsername" placeholder="Kullanıcı adı">
+<input type="password" id="newPassword" placeholder="Şifre">
+<select id="newRole"><option value="user">Kullanıcı</option><option value="admin">Admin</option></select>
+<button class="btn btn-primary" onclick="addUser()">Ekle</button>
+</div>
+<div class="login-error" id="addUserError" style="margin-top:12px"></div>
+</div>
+<div class="users-table" id="usersTable"></div>
+</div>
+
+<!-- AI ANALIZLER -->
+<div id="ai-analyses" class="page">
+<div class="page-header"><h2>🤖 AI Analizler</h2><p>Yapay zeka destekli yorum analizi</p></div>
+
+<div class="stats-grid" style="margin-bottom:20px">
+<div class="stat-card"><div class="s-icon">🤖</div><div class="s-label">Toplam Analiz</div><div class="s-value" id="ai-total">0</div></div>
+<div class="stat-card danger"><div class="s-icon">🔴</div><div class="s-label">Kritik/Yüksek</div><div class="s-value" id="ai-urgent">0</div></div>
+<div class="stat-card warning"><div class="s-icon">😠</div><div class="s-label">Olumsuz</div><div class="s-value" id="ai-negative">0</div></div>
+<div class="stat-card success"><div class="s-icon">😊</div><div class="s-label">Olumlu</div><div class="s-value" id="ai-positive">0</div></div>
+</div>
+
+<div class="controls" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+<button class="btn btn-info" onclick="loadAIAnalyses()">🔄 Yenile</button>
+
+<select id="aiFilterDate" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
+<option value="all">📅 Tüm Zamanlar</option>
+<option value="today">📅 Bugün</option>
+<option value="yesterday">📅 Dün</option>
+<option value="week">📅 Bu Hafta</option>
+<option value="month">📅 Bu Ay</option>
+<option value="custom">📅 Tarih Aralığı</option>
+</select>
+
+<div id="aiCustomDateRange" style="display:none;gap:8px;align-items:center">
+<input type="date" id="aiStartDate" style="padding:8px;border-radius:8px;border:2px solid #e0e0e0;font-size:13px">
+<span style="color:#666">-</span>
+<input type="date" id="aiEndDate" style="padding:8px;border-radius:8px;border:2px solid #e0e0e0;font-size:13px">
+<button class="btn btn-primary" onclick="applyAIDateRange()" style="padding:8px 16px;font-size:13px">Uygula</button>
+</div>
+
+<select id="aiFilterUrgency" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
+<option value="all">Tüm Öncelikler</option>
+<option value="critical">🔴 Kritik</option>
+<option value="high">🟠 Yüksek</option>
+<option value="medium">🟡 Orta</option>
+<option value="low">🟢 Düşük</option>
+</select>
+
+<select id="aiFilterSentiment" onchange="filterAIAnalyses()" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px">
+<option value="all">Tüm Duygular</option>
+<option value="negative">😠 Olumsuz</option>
+<option value="mixed">😐 Karışık</option>
+<option value="neutral">😶 Nötr</option>
+<option value="positive">😊 Olumlu</option>
+</select>
+</div>
+<div id="aiAnalysesGrid"></div>
+</div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div id="reviewModal" class="modal">
+<div class="modal-content">
+<h3>⭐ Google Yorum İsteği Gönder</h3>
+<p style="margin-bottom:16px;color:#666;font-size:14px">E-posta: <strong id="modalEmail"></strong></p>
+<textarea id="reviewMessage" placeholder="Mail içeriğini düzenleyin..."></textarea>
+<div class="modal-buttons">
+<button class="btn btn-success" onclick="sendReviewEmail()">📤 Gönder</button>
+<button class="btn btn-danger" onclick="closeModal()">İptal</button>
+</div>
+</div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+const supabase = createClient(
+    'https://hxjpzgqrylmcwabkfnqc.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4anB6Z3FyeWxtY3dhYmtmbnFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Nzk1ODksImV4cCI6MjA4NTE1NTU4OX0.YwQUuliCuxl4yc_Wqbt7UA79QYD1wxl-bmK4h1xG6Rc'
+);
+
+let DEPTS = [
+    {key:'dept_beverages_service',icon:'🍹',name:'İçecekler ve Servis'},
+    {key:'dept_food',icon:'🍽️',name:'Yiyecekler'},
+    {key:'dept_cleaning',icon:'🧹',name:'Temizlik'},
+    {key:'dept_reception',icon:'👥',name:'Resepsiyon'},
+    {key:'dept_technical',icon:'🔧',name:'Teknik Servis'},
+    {key:'dept_security',icon:'🛡️',name:'Güvenlik'},
+    {key:'dept_return',icon:'🔄',name:'Bir daha gelir misiniz?'},
+    {key:'dept_recommend',icon:'⭐',name:'Bizi tavsiye eder misiniz?'}
+];
+
+let allSurveys = [];
+let allUsers = [];
+let curUser = null;
+let ratingFilter = 'all';
+let dateFilter = 'all';
+let customDateRange = null;
+let currentReviewEmail = '';
+
+// Helper: Hem eski hem yeni format için rating al
+function getRating(survey, key) {
+    // Önce yeni format (JSON)
+    if (survey.ratings && survey.ratings[key]) {
+        return survey.ratings[key];
+    }
+    // Sonra eski format (kolon)
+    if (survey[key]) {
+        return survey[key];
+    }
+    return 0;
+}
+
+async function sha256(msg){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));return[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+
+window.login = async function(){
+    const btn=document.getElementById('loginBtn');
+    const errEl=document.getElementById('loginError');
+    const user=document.getElementById('loginUser').value.trim();
+    const pass=document.getElementById('loginPass').value;
+    if(!user||!pass)return showLoginError('Kullanıcı adı ve şifre zorunlu!');
+    btn.disabled=true;errEl.classList.remove('show');
+    try{
+        const hash=await sha256(pass);
+        const{data,error}=await supabase.from('users').select('*').eq('username',user).eq('password_hash',hash).single();
+        if(error||!data)return showLoginError('Kullanıcı adı veya şifre yanlış!');
+        curUser=data;
+        sessionStorage.setItem('hotel_user',JSON.stringify(curUser));
+        showPanel();
+    }catch(e){console.error(e);showLoginError('Bağlantı hatası!');}finally{btn.disabled=false;}
+}
+
+function showLoginError(msg){const el=document.getElementById('loginError');el.textContent='⚠️ '+msg;el.classList.add('show')}
+
+function checkSession(){const stored=sessionStorage.getItem('hotel_user');if(stored){try{curUser=JSON.parse(stored);showPanel();return true}catch(e){}}return false}
+
+async function showPanel(){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('panel').style.display='block';
+    const initials=curUser.username.charAt(0).toUpperCase();
+    document.getElementById('avatarInit').textContent=initials;
+    document.getElementById('curUserName').textContent=curUser.username;
+    document.getElementById('curUserRole').textContent=curUser.role==='admin'?'Admin':'Kullanıcı';
+    const usersMenu=document.querySelector('[data-page=users]');
+    usersMenu.style.display=curUser.role==='admin'?'flex':'none';
+    const settingsMenu=document.querySelector('[data-page=settings]');
+    settingsMenu.style.display=curUser.role==='admin'?'flex':'none';
+    await loadData();
+}
+
+window.logout=function(){sessionStorage.removeItem('hotel_user');curUser=null;document.getElementById('panel').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('loginUser').value='';document.getElementById('loginPass').value=''}
+
+async function loadQuestions(){
+    try{
+        const{data,error}=await supabase
+            .from('survey_questions')
+            .select('*')
+            .eq('is_active',true)
+            .order('sort_order',{ascending:true});
+        if(error)throw error;
+        DEPTS=data.map(q=>({key:q.key,icon:q.icon,name:q.name_tr}));
+        console.log('✅ Sorular yüklendi:',DEPTS.length);
+    }catch(e){
+        console.error('❌ Soru yükleme hatası:',e);
+        DEPTS=[
+            {key:'dept_beverages_service',icon:'🍹',name:'İçecekler ve Servis'},
+            {key:'dept_food',icon:'🍽️',name:'Yiyecekler'},
+            {key:'dept_cleaning',icon:'🧹',name:'Temizlik'},
+            {key:'dept_reception',icon:'👥',name:'Resepsiyon'},
+            {key:'dept_technical',icon:'🔧',name:'Teknik Servis'},
+            {key:'dept_security',icon:'🛡️',name:'Güvenlik'},
+            {key:'dept_return',icon:'🔄',name:'Bir daha gelir misiniz?'},
+            {key:'dept_recommend',icon:'⭐',name:'Bizi tavsiye eder misiniz?'}
+        ];
+    }
+}
+
+async function loadData(){
+    try{
+        const[survRes,usrRes]=await Promise.all([
+            supabase.from('surveys').select('*').order('created_at',{ascending:false}),
+            supabase.from('users').select('*').order('created_at',{ascending:true})
+        ]);
+        allSurveys=survRes.data||[];
+        allUsers=usrRes.data||[];
+        await loadQuestions();
+        updateDashboard();updateSurveysStats();renderSurveys();renderUsers();renderEmails();renderQuestions();
+    }catch(e){console.error(e)}
+}
+
+window.nav=function(el,pageId){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    el.classList.add('active');
+    if(pageId==='reports'){
+        const today=new Date();
+        const ago30=new Date(today);ago30.setDate(ago30.getDate()-30);
+        document.getElementById('startDate').valueAsDate=ago30;
+        document.getElementById('endDate').valueAsDate=today;
+        generateReport();
+    }
+    if(pageId==='users')renderUsers();
+    if(pageId==='emails')renderEmails();
+    if(pageId==='settings'){renderQuestions();loadGroqKey();}
+}
+
+function updateDashboard(){
+    document.getElementById('d-total').textContent=allSurveys.length;
+    let sum=0,cnt=0;
+    allSurveys.forEach(s=>DEPTS.forEach(d=>{
+        const r=getRating(s,d.key);
+        if(r>0){sum+=r;cnt++;}
+    }));
+    document.getElementById('d-avg').textContent=cnt>0?(sum/cnt).toFixed(1):'0.0';
+    const now=new Date();
+    const weekAgo=new Date(now);weekAgo.setDate(weekAgo.getDate()-7);
+    document.getElementById('d-week').textContent=allSurveys.filter(s=>new Date(s.created_at)>=weekAgo).length;
+    const todayStr=now.toDateString();
+    document.getElementById('d-today').textContent=allSurveys.filter(s=>new Date(s.created_at).toDateString()===todayStr).length;
+    renderChart();
+}
+
+function renderChart(){
+    const el=document.getElementById('dashChart');
+    const ago=new Date();ago.setDate(ago.getDate()-30);
+    const recent=allSurveys.filter(s=>new Date(s.created_at)>=ago);
+    el.innerHTML=DEPTS.map(d=>{
+        const ds=recent.filter(s=>getRating(s,d.key)>0);
+        const pct=ds.length?Math.round(ds.reduce((a,s)=>a+getRating(s,d.key),0)/ds.length/5*100):0;
+        const cls=pct>=90?'green':'red';
+        return`<div class="bar ${cls}" style="height:${pct*2}px" title="${d.name}: %${pct}">
+            <div class="bar-value ${cls}">%${pct}</div>
+            <div class="bar-label">${d.name.length>11?d.name.slice(0,11)+'..':d.name}</div></div>`;
+    }).join('');
+}
+
+function updateSurveysStats(){
+    document.getElementById('s-total').textContent=allSurveys.length;
+    let sum=0,cnt=0,low=0;
+    allSurveys.forEach(s=>DEPTS.forEach(d=>{
+        const r=getRating(s,d.key);
+        if(r>0){sum+=r;cnt++;if(r<=3)low++;}
+    }));
+    document.getElementById('s-avg').textContent=cnt>0?(sum/cnt).toFixed(1):'0.0';
+    document.getElementById('s-low').textContent=low;
+    const t=new Date().toDateString();
+    document.getElementById('s-today').textContent=allSurveys.filter(s=>new Date(s.created_at).toDateString()===t).length;
+}
+
+window.applySurveyDateFilter=function(){
+    const sd=document.getElementById('surveyStartDate').value;
+    const ed=document.getElementById('surveyEndDate').value;
+    if(!sd||!ed)return alert('Tarih seçin!');
+    customDateRange={start:new Date(sd),end:new Date(ed)};
+    customDateRange.end.setHours(23,59,59,999);
+    renderSurveys();
+}
+
+window.clearSurveyDateFilter=function(){
+    customDateRange=null;
+    document.getElementById('surveyStartDate').value='';
+    document.getElementById('surveyEndDate').value='';
+    renderSurveys();
+}
+
+function filterByDate(surveys,f){
+    if(customDateRange){
+        return surveys.filter(s=>{
+            const d=new Date(s.created_at);
+            return d>=customDateRange.start&&d<=customDateRange.end;
+        });
+    }
+    if(f==='all')return surveys;
+    const now=new Date();
+    const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    return surveys.filter(s=>{
+        const sd=new Date(s.created_at);
+        const d=new Date(sd.getFullYear(),sd.getMonth(),sd.getDate());
+        if(f==='today')return d.getTime()===today.getTime();
+        if(f==='yesterday'){const y=new Date(today);y.setDate(y.getDate()-1);return d.getTime()===y.getTime()}
+        if(f==='week'){const w=new Date(today);w.setDate(w.getDate()-7);return d>=w}
+        if(f==='month'){const m=new Date(today);m.setMonth(m.getMonth()-1);return d>=m}
+        return true;
+    });
+}
+
+function renderSurveys(){
+    const el=document.getElementById('surveysGrid');
+    let filtered=allSurveys;
+    if(ratingFilter==='poor')filtered=filtered.filter(s=>DEPTS.some(d=>getRating(s,d.key)>0&&getRating(s,d.key)<=3));
+    if(ratingFilter==='excellent')filtered=filtered.filter(s=>DEPTS.some(d=>getRating(s,d.key)>=4));
+    filtered=filterByDate(filtered,dateFilter);
+    if(!filtered.length){el.innerHTML=`<div class="empty-state"><div class="e-icon">📭</div><h2>Anket yok</h2></div>`;return}
+    const groups={};
+    filtered.forEach(s=>{
+        const dk=new Date(s.created_at).toLocaleDateString('tr-TR',{year:'numeric',month:'long',day:'numeric'});
+        (groups[dk]=groups[dk]||[]).push(s);
+    });
+    const sortedKeys=Object.keys(groups).sort((a,b)=>new Date(groups[b][0].created_at)-new Date(groups[a][0].created_at));
+    el.innerHTML=sortedKeys.map(dk=>{
+        const list=groups[dk];
+        return`<div style="margin-bottom:22px">
+            <div class="date-group-header"><h3>📅 ${dk}</h3><span>${list.length} Anket</span></div>
+            ${list.map(renderSurveyCard).join('')}
+        </div>`;
+    }).join('');
+}
+
+function renderSurveyCard(s){
+    let sum=0,cnt=0;
+    DEPTS.forEach(d=>{
+        const r=getRating(s,d.key);
+        if(r>0){sum+=r;cnt++;}
+    });
+    const avg=cnt>0?sum/cnt:0;
+    const pct=(avg/5*100).toFixed(0);
+    const cls=avg>=4?'excellent':avg>=3?'average':'poor';
+    const time=new Date(s.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    let alert='';
+    if(avg>0&&avg<=2)alert='<span class="alert-badge danger">⚠️ DİKKAT</span>';
+    else if(avg>2&&avg<=3)alert='<span class="alert-badge warning">⚠️ İZLE</span>';
+    const stars=v=>v?'⭐'.repeat(v)+'☆'.repeat(5-v):'─';
+    const isAdmin=curUser.role==='admin';
+    const isHighScore=pct>=90;
+
+    return`<div class="survey-card ${cls}">
+        <div class="survey-header">
+            <div>
+                <div class="room-badge">Oda ${s.room_number}</div>
+                <div class="badge-row">${alert}</div>
+            </div>
+            <div style="text-align:right">
+                <div class="date-badge">${time}</div>
+                ${s.email?`<div class="date-badge" style="margin-top:4px">📧 ${s.email}</div>`:''}
+                <div class="badge-row" style="justify-content:flex-end;margin-top:6px">
+                    ${isAdmin?`<button class="btn btn-danger" onclick="deleteSurvey('${s.id}','${s.room_number}')">Sil</button>`:''}
+                    ${isHighScore&&s.email?`<button class="btn btn-info" onclick="openReviewModal('${s.email}','${s.room_number}')">⭐</button>`:''}
+                    <button class="btn btn-primary" onclick="analyzeWithAI('${s.id}', this)">🤖 Analiz Et</button>
+                </div>
+            </div>
+        </div>
+        <div class="ratings-grid">
+            ${DEPTS.map(d=>`<div class="rating-item">
+                <div class="r-icon">${d.icon}</div>
+                <div class="r-label">${d.name.length>10?d.name.slice(0,10)+'..':d.name}</div>
+                <div class="r-stars">${stars(getRating(s,d.key))}</div>
+            </div>`).join('')}
+        </div>
+        ${s.comments?`<div class="comments-section"><div class="c-title">📝 Yorumlar</div><p>${s.comments}</p></div>`:''}
+    </div>`;
+}
+
+window.deleteSurvey=async function(id,room){
+    if(!confirm(`Oda ${room} anketini silmek istediğinizden emin misiniz?`))return;
+    try{
+        const{error}=await supabase.from('surveys').delete().eq('id',id);
+        if(error)throw error;
+        allSurveys=allSurveys.filter(s=>s.id!==id);
+        updateDashboard();updateSurveysStats();renderSurveys();renderEmails();
+    }catch(e){console.error(e);alert('Silme başarısız!')}
+}
+
+function renderEmails(){
+    const el=document.getElementById('emailsTable');
+    const emails=allSurveys.filter(s=>s.email).map(s=>{
+        let sum=0,cnt=0;
+        DEPTS.forEach(d=>{
+            const r=getRating(s,d.key);
+            if(r>0){sum+=r;cnt++;}
+        });
+        const avg=cnt>0?sum/cnt:0;
+        const pct=(avg/5*100).toFixed(0);
+        return{...s,avg,pct};
+    }).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+
+    if(!emails.length){el.innerHTML='<div class="empty-state"><div class="e-icon">📧</div><h2>E-posta yok</h2></div>';return}
+
+    el.innerHTML=`<table>
+        <thead><tr><th>#</th><th>E-posta</th><th>Oda</th><th>Tarih</th><th>Puan</th><th>%</th><th></th></tr></thead>
+        <tbody>${emails.map((e,i)=>`<tr>
+            <td>${i+1}</td>
+            <td><strong>${e.email}</strong></td>
+            <td>${e.room_number}</td>
+            <td>${new Date(e.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}</td>
+            <td>${e.avg.toFixed(1)}★</td>
+            <td style="color:${e.pct>=90?'#10b981':'#ef4444'};font-weight:700">%${e.pct}</td>
+            <td>${e.pct>=90?`<button class="btn btn-info" onclick="openReviewModal('${e.email}','${e.room_number}')">⭐ Yorum İste</button>`:''}</td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+window.exportEmails=function(){
+    const emails=allSurveys.filter(s=>s.email).map(s=>{
+        let sum=0,cnt=0;
+        DEPTS.forEach(d=>{
+            const r=getRating(s,d.key);
+            if(r>0){sum+=r;cnt++;}
+        });
+        const avg=cnt>0?(sum/cnt).toFixed(1):0;
+        const date=new Date(s.created_at).toLocaleDateString('tr-TR');
+        return`${s.email},${s.room_number},${date},${avg}`;
+    });
+    const csv='E-posta,Oda,Tarih,Puan\n'+emails.join('\n');
+    const blob=new Blob([csv],{type:'text/csv'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='emails_'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click();
+}
+
+window.openReviewModal=function(email,room){
+    currentReviewEmail=email;
+    document.getElementById('modalEmail').textContent=email;
+    document.getElementById('reviewMessage').value=`Merhaba,
+
+Noxinn Deluxe Hotel'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
+
+Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
+
+Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
+
+Zamanınız için teşekkürler!
+
+Sevgilerle,
+Noxinn Deluxe Hotel`;
+    document.getElementById('reviewModal').classList.add('show');
+}
+
+window.closeModal=function(){
+    document.getElementById('reviewModal').classList.remove('show');
+    currentReviewEmail='';
+}
+
+window.sendReviewEmail=function(){
+    const msg=document.getElementById('reviewMessage').value;
+    console.log('📧 Mail gönderilecek:',currentReviewEmail);
+    console.log('📝 İçerik:',msg);
+    alert(`✅ Mail gönderildi: ${currentReviewEmail}\n\n(Gerçek mail gönderimi için SMTP ayarları gerekli)`);
+    closeModal();
+}
+
+window.sendBulkReviewRequest=function(){
+    const highScores=allSurveys.filter(s=>{
+        if(!s.email)return false;
+        let sum=0,cnt=0;
+        DEPTS.forEach(d=>{
+            const r=getRating(s,d.key);
+            if(r>0){sum+=r;cnt++;}
+        });
+        const pct=cnt>0?(sum/cnt/5*100):0;
+        return pct>=90;
+    });
+    if(!highScores.length)return alert('%90+ puan alan misafir yok!');
+    console.log('📧 Toplu mail:',highScores.map(s=>s.email));
+    alert(`✅ ${highScores.length} misafir için Google yorum isteği gönderildi!\n\n(Gerçek mail için SMTP config gerekli)`);
+}
+
+window.generateReport=function(){
+    const sd=document.getElementById('startDate').value;
+    const ed=document.getElementById('endDate').value;
+    if(!sd||!ed)return alert('⚠️ Tarih seçin!');
+    const start=new Date(sd);
+    const end=new Date(ed);end.setHours(23,59,59,999);
+    const filtered=allSurveys.filter(s=>{const d=new Date(s.created_at);return d>=start&&d<=end});
+    if(!filtered.length){
+        document.getElementById('departmentsGrid').innerHTML=`<div class="empty-state"><div class="e-icon">📭</div><h2>Bu aralıkta anket yok</h2></div>`;
+        document.getElementById('reportSummary').innerHTML='';
+        document.getElementById('reportChartWrap').style.display='none';
+        return;
+    }
+    let sum=0,cnt=0;
+    filtered.forEach(s=>DEPTS.forEach(d=>{
+        const r=getRating(s,d.key);
+        if(r>0){sum+=r;cnt++;}
+    }));
+    const avg=cnt>0?(sum/cnt).toFixed(1):0;
+    document.getElementById('reportSummary').innerHTML=`
+        <div class="stat-card"><div class="s-label">Tarih Aralığı</div><div class="s-value" style="font-size:14px;color:#666">${start.toLocaleDateString('tr-TR')} – ${end.toLocaleDateString('tr-TR')}</div></div>
+        <div class="stat-card"><div class="s-label">Toplam Anket</div><div class="s-value">${filtered.length}</div></div>
+        <div class="stat-card ${avg>=4?'success':avg>=3?'warning':'danger'}"><div class="s-label">Genel Ortalama</div><div class="s-value">⭐ ${avg}</div></div>`;
+
+    const dData=DEPTS.map(d=>{
+        const ds=filtered.filter(s=>getRating(s,d.key)>0);
+        if(!ds.length)return{name:d.name,icon:d.icon,count:0,avg:0,pct:0,stars:{}};
+        const total=ds.reduce((a,s)=>a+getRating(s,d.key),0);
+        const avgR=total/ds.length;
+        const pct=(avgR/5*100).toFixed(1);
+        const stars={1:0,2:0,3:0,4:0,5:0};
+        ds.forEach(s=>{
+            const r=getRating(s,d.key);
+            if(r>=1&&r<=5)stars[r]++;
+        });
+        return{name:d.name,icon:d.icon,count:ds.length,avg:avgR.toFixed(1),pct:parseFloat(pct),stars};
+    }).sort((a,b)=>b.pct-a.pct);
+
+    document.getElementById('reportChartWrap').style.display='block';
+    const chartEl=document.getElementById('reportChart');
+    chartEl.innerHTML=dData.map(d=>{
+        const cls=d.pct>=90?'green':'red';
+        return`<div class="bar ${cls}" style="height:${d.pct*2}px" title="${d.name}: %${d.pct}">
+            <div class="bar-value ${cls}">%${d.pct}</div>
+            <div class="bar-label">${d.name.length>11?d.name.slice(0,11)+'..':d.name}</div></div>`;
+    }).join('');
+
+    document.getElementById('departmentsGrid').innerHTML=dData.map(d=>{
+        const sc=d.pct>=90?'excellent':'danger';
+        const pc=d.pct>=90?'excellent':'danger';
+        return`<div class="dept-card">
+            <div class="dept-header"><div class="dept-name">${d.icon} ${d.name}</div><div class="dept-score ${sc}">%${d.pct}</div></div>
+            ${d.count?`
+                <div class="dept-details">
+                    <div class="detail-item"><div class="label">Toplam</div><div class="value">${d.count}</div></div>
+                    <div class="detail-item"><div class="label">Ortalama</div><div class="value">⭐${d.avg}</div></div>
+                    <div class="detail-item"><div class="label">5★</div><div class="value" style="color:#10b981">${d.stars[5]}</div></div>
+                    <div class="detail-item"><div class="label">4★</div><div class="value" style="color:#3b82f6">${d.stars[4]}</div></div>
+                    <div class="detail-item"><div class="label">3★</div><div class="value" style="color:#f59e0b">${d.stars[3]}</div></div>
+                    <div class="detail-item"><div class="label">1-2★</div><div class="value" style="color:#ef4444">${(d.stars[2]||0)+(d.stars[1]||0)}</div></div>
+                </div>
+                <div class="progress-bar"><div class="progress-fill ${pc}" style="width:${d.pct}%">%${d.pct}</div></div>
+            `:`<p style="text-align:center;color:#999;padding:16px">Değerlendirme yok</p>`}
+        </div>`;
+    }).join('');
+}
+
+function renderQuestions(){
+    const el=document.getElementById('questionsTable');
+    if(!DEPTS.length){el.innerHTML='<div class="empty-state"><div class="e-icon">📝</div><h2>Soru yok</h2></div>';return}
+    el.innerHTML=`<table>
+        <thead><tr><th>#</th><th>Emoji</th><th>Soru</th><th>Anahtar</th><th></th></tr></thead>
+        <tbody>${DEPTS.map((q,i)=>`<tr>
+            <td>${i+1}</td>
+            <td style="font-size:20px">${q.icon}</td>
+            <td><strong>${q.name}</strong></td>
+            <td><code style="background:#f3f4f6;padding:3px 8px;border-radius:4px;font-size:11px">${q.key}</code></td>
+            <td><button class="btn btn-danger" onclick="deleteQuestion(${i},'${q.name}')">Sil</button></td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+window.addQuestion=async function(){
+    const key=document.getElementById('newQKey').value.trim();
+    const icon=document.getElementById('newQIcon').value.trim();
+    const name=document.getElementById('newQName').value.trim();
+    const errEl=document.getElementById('addQError');
+    errEl.classList.remove('show');
+    if(!key||!icon||!name){errEl.textContent='⚠️ Tüm alanları doldurun!';errEl.classList.add('show');return}
+    if(DEPTS.find(d=>d.key===key)){errEl.textContent='⚠️ Bu anahtar zaten var!';errEl.classList.add('show');return}
+    try{
+        const{data,error}=await supabase.from('survey_questions').insert([{
+            key,icon,
+            name_tr:name,name_en:name,name_ru:name,name_de:name,
+            name_pl:name,name_cs:name,name_fr:name,name_da:name,name_ro:name,
+            sort_order:DEPTS.length+1
+        }]).select();
+        if(error)throw error;
+        DEPTS.push({key,icon,name});
+        document.getElementById('newQKey').value='';
+        document.getElementById('newQIcon').value='';
+        document.getElementById('newQName').value='';
+        renderQuestions();
+        errEl.style.background='#d1fae5';errEl.style.color='#059669';errEl.style.borderColor='#10b981';
+        errEl.textContent='✅ Soru eklendi ve kaydedildi!';errEl.classList.add('show');
+        setTimeout(()=>{errEl.classList.remove('show');errEl.style.background='#fee2e2';errEl.style.color='#dc2626';errEl.style.borderColor='#ef4444'},3000);
+    }catch(e){console.error(e);errEl.textContent='⚠️ Soru eklenemedi: '+e.message;errEl.classList.add('show')}
+}
+
+window.deleteQuestion=async function(idx,name){
+    if(!confirm(`"${name}" sorusunu silmek istediğinizden emin misiniz?`))return;
+    try{
+        const question=DEPTS[idx];
+        const{error}=await supabase.from('survey_questions').delete().eq('key',question.key);
+        if(error)throw error;
+        DEPTS.splice(idx,1);
+        renderQuestions();
+        console.log('✅ Soru silindi');
+    }catch(e){console.error(e);alert('Silme başarısız: '+e.message)}
+}
+
+// Groq API Key kaydetme - Supabase'e kaydet
+window.saveGroqKey=async function(){
+    const key=document.getElementById('groqApiKey').value.trim();
+    const errEl=document.getElementById('groqKeyError');
+    const statusEl=document.getElementById('groqKeyStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display='none';
+    
+    if(!key){
+        errEl.textContent='⚠️ API Key girin!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    if(!key.startsWith('gsk_')){
+        errEl.textContent='⚠️ Geçersiz API Key formatı! "gsk_..." ile başlamalı.';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        // Veritabanına kaydet
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'groq_api_key',
+                setting_value: key,
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        // Başarılı mesajı
+        statusEl.style.display='block';
+        statusEl.textContent='✅ API Key kaydedildi ve tüm cihazlarda kullanılabilir!';
+        setTimeout(()=>statusEl.style.display='none',5000);
+        
+        console.log('✅ Groq API Key veritabanına kaydedildi');
+        
+    } catch(e) {
+        console.error('API Key kaydetme hatası:', e);
+        errEl.textContent='⚠️ API Key kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+// Sayfa yüklendiğinde key'i Supabase'den al
+async function loadGroqKey(){
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'groq_api_key')
+            .single();
+        
+        if (error) {
+            console.log('API Key bulunamadı:', error.message);
+            return;
+        }
+        
+        if (data && data.setting_value) {
+            document.getElementById('groqApiKey').value = data.setting_value;
+            document.getElementById('groqKeyStatus').style.display = 'block';
+            document.getElementById('groqKeyStatus').textContent = '✅ API Key yüklendi (veritabanından)';
+            console.log('✅ Groq API Key veritabanından yüklendi');
+        }
+    } catch(e) {
+        console.error('API Key yükleme hatası:', e);
+    }
+}
+
+function renderUsers(){
+    const el=document.getElementById('usersTable');
+    document.getElementById('addUserForm').style.display=curUser.role==='admin'?'block':'none';
+    if(!allUsers.length){el.innerHTML='<div class="empty-state"><div class="e-icon">👥</div><h2>Kullanıcı yok</h2></div>';return}
+    el.innerHTML=`<table>
+        <thead><tr><th>#</th><th>Kullanıcı Adı</th><th>Rol</th><th>Oluşturulma</th><th></th></tr></thead>
+        <tbody>${allUsers.map((u,i)=>`<tr>
+            <td>${i+1}</td>
+            <td><strong>${u.username}</strong> ${u.id===curUser.id?'<span style="font-size:10px;color:#10b981">(Sen)</span>':''}</td>
+            <td><span class="role-badge ${u.role}">${u.role==='admin'?'Admin':'Kullanıcı'}</span></td>
+            <td>${new Date(u.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</td>
+            <td>${u.id!==curUser.id&&curUser.role==='admin'?`<button class="btn btn-danger" onclick="deleteUser('${u.id}','${u.username}')">Sil</button>`:''}</td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+window.addUser=async function(){
+    const username=document.getElementById('newUsername').value.trim();
+    const password=document.getElementById('newPassword').value;
+    const role=document.getElementById('newRole').value;
+    const errEl=document.getElementById('addUserError');
+    errEl.classList.remove('show');
+    if(!username||!password){errEl.textContent='⚠️ Kullanıcı adı ve şifre zorunlu!';errEl.classList.add('show');return}
+    if(password.length<4){errEl.textContent='⚠️ Şifre en az 4 karakter!';errEl.classList.add('show');return}
+    if(allUsers.find(u=>u.username===username)){errEl.textContent='⚠️ Bu kullanıcı adı zaten var!';errEl.classList.add('show');return}
+    try{
+        const hash=await sha256(password);
+        const{data,error}=await supabase.from('users').insert([{username,password_hash:hash,role}]).select();
+        if(error)throw error;
+        allUsers.push(data[0]);
+        document.getElementById('newUsername').value='';
+        document.getElementById('newPassword').value='';
+        renderUsers();
+    }catch(e){console.error(e);errEl.textContent='⚠️ Kullanıcı eklenemedi!';errEl.classList.add('show')}
+}
+
+window.deleteUser=async function(id,name){
+    if(!confirm(`"${name}" kullanıcısını silmek istediğinizden emin misiniz?`))return;
+    try{
+        const{error}=await supabase.from('users').delete().eq('id',id);
+        if(error)throw error;
+        allUsers=allUsers.filter(u=>u.id!==id);
+        renderUsers();
+    }catch(e){console.error(e);alert('Silme başarısız!')}
+}
+
+window.changePassword=async function(){
+    const oldPass=document.getElementById('oldPassword').value;
+    const newPass=document.getElementById('newPasswordChange').value;
+    const confirm=document.getElementById('confirmPassword').value;
+    const errEl=document.getElementById('changePassError');
+    errEl.classList.remove('show');
+    if(!oldPass||!newPass||!confirm){errEl.textContent='⚠️ Tüm alanları doldurun!';errEl.classList.add('show');return}
+    if(newPass!==confirm){errEl.textContent='⚠️ Yeni şifreler eşleşmiyor!';errEl.classList.add('show');return}
+    if(newPass.length<4){errEl.textContent='⚠️ Yeni şifre en az 4 karakter!';errEl.classList.add('show');return}
+    try{
+        const oldHash=await sha256(oldPass);
+        if(oldHash!==curUser.password_hash){errEl.textContent='⚠️ Mevcut şifre yanlış!';errEl.classList.add('show');return}
+        const newHash=await sha256(newPass);
+        const{error}=await supabase.from('users').update({password_hash:newHash}).eq('id',curUser.id);
+        if(error)throw error;
+        curUser.password_hash=newHash;
+        sessionStorage.setItem('hotel_user',JSON.stringify(curUser));
+        document.getElementById('oldPassword').value='';
+        document.getElementById('newPasswordChange').value='';
+        document.getElementById('confirmPassword').value='';
+        errEl.style.background='#d1fae5';errEl.style.color='#059669';errEl.style.borderColor='#10b981';
+        errEl.textContent='✅ Şifreniz değiştirildi!';
+        errEl.classList.add('show');
+        setTimeout(()=>{errEl.classList.remove('show');errEl.style.background='#fee2e2';errEl.style.color='#dc2626';errEl.style.borderColor='#ef4444'},3000);
+    }catch(e){console.error(e);errEl.textContent='⚠️ Şifre değiştirilemedi!';errEl.classList.add('show')}
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        const type=btn.dataset.type;
+        if(type==='rating'){
+            document.querySelectorAll('[data-type=rating]').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            ratingFilter=btn.dataset.filter;
+        }else{
+            document.querySelectorAll('[data-type=date]').forEach(b=>b.classList.remove('active'));
+            btn.classList.toggle('active',true);
+            dateFilter=btn.dataset.date;
+        }
+        renderSurveys();
+    });
+});
+
+supabase.channel('realtime-surveys')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'surveys'},p=>{
+        allSurveys.unshift(p.new);
+        updateDashboard();updateSurveysStats();renderSurveys();renderEmails();
+        
+        let sum=0,cnt=0;
+        DEPTS.forEach(d=>{
+            const r=getRating(p.new,d.key);
+            if(r>0){sum+=r;cnt++;}
+        });
+        const pct=cnt>0?(sum/cnt/5*100):0;
+        if(pct<80){
+            console.log(`🚨 DÜŞÜK PUAN UYARISI: Oda ${p.new.room_number} - %${pct.toFixed(0)}`);
+            console.log('📧 Alert email gönderilecek (SMTP config gerekli)');
+        }
+    })
+    .subscribe();
+
+// ═══════════════════════════════════════════════════════════
+// AI ANALIZ FONKSİYONLARI
+// ═══════════════════════════════════════════════════════════
+
+let allAIAnalyses = [];
+let aiCustomDateRange = null;
+
+window.analyzeWithAI = async function(surveyId, btnElement) {
+    const survey = allSurveys.find(s => s.id === surveyId);
+    if (!survey) return alert('Anket bulunamadı!');
+    
+    // Groq API Key - Supabase'den al
+    let GROQ_KEY;
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'groq_api_key')
+            .single();
+        
+        if (error || !data || !data.setting_value) {
+            return alert('❌ Groq API Key girilmemiş!\n\nAyarlar sayfasından API Key ekleyin.\n\nhttps://console.groq.com/keys');
+        }
+        
+        GROQ_KEY = data.setting_value;
+    } catch(e) {
+        console.error('API Key alınırken hata:', e);
+        return alert('❌ API Key alınamadı: ' + e.message);
+    }
+    
+    let sum = 0, cnt = 0;
+    DEPTS.forEach(d => {
+        const r = getRating(survey, d.key);
+        if (r > 0) { sum += r; cnt++; }
+    });
+    const avgScore = cnt > 0 ? sum / cnt : 0;
+    const avgPct = (avgScore / 5 * 100).toFixed(0);
+    
+    const btn = btnElement;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Analiz ediliyor...';
+    
+    try {
+        // Departman puanlarını hazırla
+        const ratingsText = DEPTS.map(d => {
+            const r = getRating(survey, d.key);
+            return r > 0 ? `- ${d.name}: ${r}★` : '';
+        }).filter(Boolean).join('\n');
+        
+        // AI'ye gönderilecek mesaj
+        const userMessage = `Bir otel misafir anketini analiz et ve SADECE JSON formatında yanıt ver.
+
+ANKET:
+Oda: ${survey.room_number}
+Puan: ${avgScore.toFixed(1)}/5 (%${avgPct})
+
+Puanlar:
+${ratingsText}
+
+Yorum: "${survey.comments || 'Yorum yok'}"
+
+SADECE bu JSON'u döndür (başka açıklama ekleme):
+{
+  "sentiment": "positive/negative/neutral/mixed",
+  "urgency": "low/medium/high/critical",
+  "category": "cleaning/service/food/technical/reception/general",
+  "summary": "Türkçe kısa özet (1-2 cümle)",
+  "issues": [
+    {"issue": "Sorun açıklaması", "department": "Departman", "severity": "low/medium/high", "evidence": "Kanıt"}
+  ],
+  "recommendations": [
+    {"action": "Yapılacak iş", "priority": "low/medium/high/immediate", "assignTo": "Kişi/Departman", "estimatedTime": "Süre"}
+  ]
+}`;
+
+        // Groq API çağrısı
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Sen bir otel yönetim asistanısın. Misafir anketlerini analiz edip JSON formatında sonuç döndürüyorsun. Sadece JSON yanıt ver, başka açıklama ekleme.'
+                    },
+                    {
+                        role: 'user',
+                        content: userMessage
+                    }
+                ],
+                temperature: 0.3,
+                max_tokens: 1000
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || 'Groq API hatası');
+        }
+        
+        const data = await response.json();
+        const aiText = data.choices[0].message.content;
+        
+        // JSON parse et
+        let analysis;
+        try {
+            const cleaned = aiText.replace(/```json\n?|\n?```/g, '').trim();
+            analysis = JSON.parse(cleaned);
+        } catch (e) {
+            console.error('JSON parse hatası:', aiText);
+            throw new Error('AI yanıtı JSON formatında değil: ' + aiText.substring(0, 100));
+        }
+        
+        // Önce bu anket için analiz var mı kontrol et
+        const { data: existingAnalysis } = await supabase
+            .from('ai_analyses')
+            .select('id')
+            .eq('survey_id', survey.id)
+            .single();
+        
+        let savedAnalysis;
+        
+        if (existingAnalysis) {
+            // Varsa güncelle
+            const { data, error: dbError } = await supabase
+                .from('ai_analyses')
+                .update({
+                    sentiment: analysis.sentiment,
+                    urgency: analysis.urgency,
+                    category: analysis.category,
+                    summary: analysis.summary,
+                    issues: analysis.issues || [],
+                    recommendations: analysis.recommendations || [],
+                    model_used: 'llama-3.3-70b',
+                    analyzed_at: new Date().toISOString()
+                })
+                .eq('survey_id', survey.id)
+                .select();
+            
+            if (dbError) throw dbError;
+            savedAnalysis = data;
+            
+            console.log('✅ Analiz güncellendi');
+        } else {
+            // Yoksa yeni ekle
+            const { data, error: dbError } = await supabase
+                .from('ai_analyses')
+                .insert([{
+                    survey_id: survey.id,
+                    sentiment: analysis.sentiment,
+                    urgency: analysis.urgency,
+                    category: analysis.category,
+                    summary: analysis.summary,
+                    issues: analysis.issues || [],
+                    recommendations: analysis.recommendations || [],
+                    model_used: 'llama-3.3-70b'
+                }])
+                .select();
+            
+            if (dbError) throw dbError;
+            savedAnalysis = data;
+            
+            console.log('✅ Yeni analiz oluşturuldu');
+        }
+        
+        alert(`✅ AI Analizi Tamamlandı!\n\n` + 
+              `Duygu: ${analysis.sentiment}\n` +
+              `Aciliyet: ${analysis.urgency}\n` +
+              `Kategori: ${analysis.category}\n\n` +
+              `Özet: ${analysis.summary}\n\n` +
+              `${existingAnalysis ? '(Mevcut analiz güncellendi)' : '(Yeni analiz oluşturuldu)'}\n\n` +
+              `Detayları "AI Analizler" sayfasında görebilirsiniz.`);
+        
+        await loadAIAnalyses();
+        
+    } catch (error) {
+        console.error('AI Analiz hatası:', error);
+        alert(`❌ AI analizi başarısız:\n\n${error.message}\n\nAPI Key doğru mu kontrol edin.`);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+async function loadAIAnalyses() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_analyses')
+            .select('*, surveys(room_number, email, created_at)')
+            .order('analyzed_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        allAIAnalyses = data || [];
+        console.log('✅ AI Analizler yüklendi:', allAIAnalyses.length);
+        updateAIStats();
+        renderAIAnalyses();
+    } catch (e) {
+        console.error('AI analizleri yükleme hatası:', e);
+    }
+}
+
+function updateAIStats() {
+    const total = allAIAnalyses.length;
+    const urgent = allAIAnalyses.filter(a => a.urgency === 'critical' || a.urgency === 'high').length;
+    const negative = allAIAnalyses.filter(a => a.sentiment === 'negative').length;
+    const positive = allAIAnalyses.filter(a => a.sentiment === 'positive').length;
+    
+    document.getElementById('ai-total').textContent = total;
+    document.getElementById('ai-urgent').textContent = urgent;
+    document.getElementById('ai-negative').textContent = negative;
+    document.getElementById('ai-positive').textContent = positive;
+}
+
+function renderAIAnalyses() {
+    const grid = document.getElementById('aiAnalysesGrid');
+    if (!grid) return;
+    
+    let filtered = allAIAnalyses;
+    
+    // Tarih filtresi
+    const dateFilter = document.getElementById('aiFilterDate')?.value;
+    if (dateFilter && dateFilter !== 'all') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        filtered = filtered.filter(a => {
+            const date = new Date(a.analyzed_at);
+            date.setHours(0, 0, 0, 0);
+            
+            if (dateFilter === 'today') {
+                return date.getTime() === today.getTime();
+            } else if (dateFilter === 'yesterday') {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                return date.getTime() === yesterday.getTime();
+            } else if (dateFilter === 'week') {
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return date >= weekAgo;
+            } else if (dateFilter === 'month') {
+                const monthAgo = new Date(today);
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+                return date >= monthAgo;
+            } else if (dateFilter === 'custom' && aiCustomDateRange) {
+                const start = new Date(aiCustomDateRange.start);
+                const end = new Date(aiCustomDateRange.end);
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+                return date >= start && date <= end;
+            }
+            return true;
+        });
+    }
+    
+    // Aciliyet filtresi
+    const urgencyFilter = document.getElementById('aiFilterUrgency')?.value;
+    if (urgencyFilter && urgencyFilter !== 'all') {
+        filtered = filtered.filter(a => a.urgency === urgencyFilter);
+    }
+    
+    // Duygu filtresi
+    const sentimentFilter = document.getElementById('aiFilterSentiment')?.value;
+    if (sentimentFilter && sentimentFilter !== 'all') {
+        filtered = filtered.filter(a => a.sentiment === sentimentFilter);
+    }
+    
+    if (!filtered.length) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <div class="e-icon">🤖</div>
+                <h2>AI analizi yok</h2>
+                <p>Seçilen filtrelere uygun analiz bulunamadı</p>
+            </div>`;
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(renderAIAnalysisCard).join('');
+}
+
+function renderAIAnalysisCard(analysis) {
+    const urgencyColors = {
+        critical: '#ef4444',
+        high: '#f97316',
+        medium: '#f59e0b',
+        low: '#10b981'
+    };
+    
+    const urgencyIcons = {
+        critical: '🔴',
+        high: '🟠',
+        medium: '🟡',
+        low: '🟢'
+    };
+    
+    const sentimentIcons = {
+        positive: '😊',
+        neutral: '😶',
+        mixed: '😐',
+        negative: '😠'
+    };
+    
+    const survey = analysis.surveys || {};
+    const date = new Date(analysis.analyzed_at).toLocaleString('tr-TR');
+    
+    return `
+        <div class="survey-card" style="border-left: 4px solid ${urgencyColors[analysis.urgency] || '#999'}">
+            <div class="survey-header">
+                <div>
+                    <div class="room-badge">Oda ${survey.room_number || '?'}</div>
+                    <div class="badge-row">
+                        <span class="alert-badge" style="background:${urgencyColors[analysis.urgency] || '#999'};color:white">
+                            ${urgencyIcons[analysis.urgency] || '⚪'} ${(analysis.urgency || 'N/A').toUpperCase()}
+                        </span>
+                        <span class="alert-badge" style="background:#667eea;color:white">
+                            ${sentimentIcons[analysis.sentiment] || '😶'} ${analysis.sentiment || 'N/A'}
+                        </span>
+                    </div>
+                </div>
+                <div style="text-align:right">
+                    <div class="date-badge">${date}</div>
+                    <div class="date-badge" style="margin-top:4px">📊 ${analysis.category || 'general'}</div>
+                    ${curUser && curUser.role === 'admin' ? `
+                        <button class="btn btn-danger" style="margin-top:8px;font-size:11px;padding:6px 12px" onclick="deleteAIAnalysis('${analysis.id}','${survey.room_number || '?'}')">
+                            🗑️ Sil
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div class="comments-section">
+                <div class="c-title">🤖 AI Özeti</div>
+                <p><strong>${analysis.summary || 'Özet yok'}</strong></p>
+            </div>
+            
+            ${analysis.issues && analysis.issues.length ? `
+                <div class="comments-section">
+                    <div class="c-title">⚠️ Tespit Edilen Sorunlar (${analysis.issues.length})</div>
+                    ${analysis.issues.map(issue => `
+                        <div style="padding:10px;background:#fef2f2;border-radius:8px;margin:8px 0;border-left:3px solid #ef4444">
+                            <strong>${issue.issue || 'Sorun'}</strong>
+                            <div style="font-size:12px;color:#666;margin-top:4px">
+                                📍 ${issue.department || 'N/A'} • 
+                                Ciddiyet: ${issue.severity || 'N/A'}
+                            </div>
+                            ${issue.evidence ? `<div style="font-size:11px;color:#999;margin-top:4px;font-style:italic">"${issue.evidence}"</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            
+            ${analysis.recommendations && analysis.recommendations.length ? `
+                <div class="comments-section">
+                    <div class="c-title">💡 AI Önerileri (${analysis.recommendations.length})</div>
+                    ${analysis.recommendations.map((rec, idx) => `
+                        <div style="padding:12px;background:#f0f9ff;border-radius:8px;margin:8px 0;border-left:3px solid #3b82f6">
+                            <strong>${idx + 1}. ${rec.action || 'Öneri'}</strong>
+                            <div style="font-size:12px;color:#666;margin-top:6px">
+                                👤 ${rec.assignTo || 'Atanmadı'} • 
+                                ⏱️ ${rec.estimatedTime || 'Belirsiz'} • 
+                                🎯 Öncelik: ${rec.priority || 'N/A'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function filterAIAnalyses() {
+    // Tarih aralığı göster/gizle
+    const dateFilter = document.getElementById('aiFilterDate')?.value;
+    const customRange = document.getElementById('aiCustomDateRange');
+    
+    if (dateFilter === 'custom') {
+        customRange.style.display = 'flex';
+        // Bugünün tarihini varsayılan olarak ayarla
+        const today = new Date().toISOString().split('T')[0];
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        document.getElementById('aiStartDate').value = weekAgo.toISOString().split('T')[0];
+        document.getElementById('aiEndDate').value = today;
+    } else {
+        customRange.style.display = 'none';
+        aiCustomDateRange = null;
+    }
+    
+    renderAIAnalyses();
+}
+
+// Özel tarih aralığını uygula
+window.applyAIDateRange = function() {
+    const startDate = document.getElementById('aiStartDate').value;
+    const endDate = document.getElementById('aiEndDate').value;
+    
+    if (!startDate || !endDate) {
+        alert('⚠️ Lütfen başlangıç ve bitiş tarihlerini seçin!');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('⚠️ Başlangıç tarihi bitiş tarihinden önce olmalı!');
+        return;
+    }
+    
+    aiCustomDateRange = { start: startDate, end: endDate };
+    renderAIAnalyses();
+}
+
+// AI Analiz silme (sadece admin)
+window.deleteAIAnalysis = async function(analysisId, roomNumber) {
+    if (!curUser || curUser.role !== 'admin') {
+        return alert('❌ Sadece adminler AI analizlerini silebilir!');
+    }
+    
+    if (!confirm(`Oda ${roomNumber} için AI analizini silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_analyses')
+            .delete()
+            .eq('id', analysisId);
+        
+        if (error) throw error;
+        
+        // Local listeden kaldır
+        allAIAnalyses = allAIAnalyses.filter(a => a.id !== analysisId);
+        
+        // Sayfayı yenile
+        renderAIAnalyses();
+        
+        console.log('✅ AI analizi silindi:', analysisId);
+        
+        // Başarı mesajı
+        alert('✅ AI analizi başarıyla silindi!');
+        
+    } catch (error) {
+        console.error('AI analiz silme hatası:', error);
+        alert('❌ AI analizi silinemedi:\n\n' + error.message);
+    }
+}
+
+if(!checkSession()){}
+</script>
+</body>
+</html>
