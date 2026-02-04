@@ -644,7 +644,7 @@ function renderSurveyCard(s){
                 <div class="badge-row" style="justify-content:flex-end;margin-top:6px">
                     ${isAdmin?`<button class="btn btn-danger" onclick="deleteSurvey('${s.id}','${s.room_number}')">Sil</button>`:''}
                     ${isHighScore&&s.email?`<button class="btn btn-info" onclick="openReviewModal('${s.email}','${s.room_number}')">⭐</button>`:''}
-                    <button class="btn btn-primary" onclick="analyzeWithAI('${s.id}')">🤖 Analiz Et</button>
+                    <button class="btn btn-primary" onclick="analyzeWithAI('${s.id}', this)">🤖 Analiz Et</button>
                 </div>
             </div>
         </div>
@@ -1074,7 +1074,7 @@ supabase.channel('realtime-surveys')
 let allAIAnalyses = [];
 let aiCustomDateRange = null;
 
-window.analyzeWithAI = async function(surveyId) {
+window.analyzeWithAI = async function(surveyId, btnElement) {
     const survey = allSurveys.find(s => s.id === surveyId);
     if (!survey) return alert('Anket bulunamadı!');
     
@@ -1105,7 +1105,7 @@ window.analyzeWithAI = async function(surveyId) {
     const avgScore = cnt > 0 ? sum / cnt : 0;
     const avgPct = (avgScore / 5 * 100).toFixed(0);
     
-    const btn = event.target;
+    const btn = btnElement;
     const originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = '⏳ Analiz ediliyor...';
