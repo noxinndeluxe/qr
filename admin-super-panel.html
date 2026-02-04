@@ -245,6 +245,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <!-- REPORTS -->
 <div id="reports" class="page">
 <div class="page-header"><h2>📈 Departman Raporu</h2><p>Performans analizi</p></div>
+
+<!-- Genel Rapor Bölümü -->
+<div style="background:white;padding:20px;border-radius:14px;margin-bottom:24px;box-shadow:0 3px 14px rgba(0,0,0,.08)">
+<h3 style="color:#1e3c72;margin-bottom:16px;font-size:18px">📊 Genel Rapor</h3>
 <div class="controls">
 <div class="ctrl-group"><label>Başlangıç</label><input type="date" id="startDate"></div>
 <div class="ctrl-group"><label>Bitiş</label><input type="date" id="endDate"></div>
@@ -254,6 +258,25 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <div class="stats-grid" id="reportSummary"></div>
 <div class="chart-wrap" id="reportChartWrap" style="display:none"><h3>📊 Departman Performans Grafiği</h3><div class="bar-chart" id="reportChart"></div></div>
 <div id="departmentsGrid"></div>
+</div>
+
+<!-- Departman Bazlı Detaylı Rapor Bölümü -->
+<div style="background:white;padding:20px;border-radius:14px;box-shadow:0 3px 14px rgba(0,0,0,.08)">
+<h3 style="color:#1e3c72;margin-bottom:16px;font-size:18px">🎯 Departman Bazlı Detaylı Rapor</h3>
+<div class="controls" style="margin-bottom:20px">
+<div class="ctrl-group"><label>Başlangıç</label><input type="date" id="deptStartDate"></div>
+<div class="ctrl-group"><label>Bitiş</label><input type="date" id="deptEndDate"></div>
+<div class="ctrl-group">
+<label>Departman Seç</label>
+<select id="deptSelect" style="padding:10px 16px;border-radius:8px;border:2px solid #e0e0e0;font-size:14px;min-width:200px">
+<option value="">Departman seçin...</option>
+</select>
+</div>
+<button class="btn btn-primary" onclick="generateDepartmentReport()">📊 Detaylı Rapor Oluştur</button>
+<button class="btn btn-success" onclick="exportDepartmentReport()">📥 Excel İndir</button>
+</div>
+<div id="deptReportContainer"></div>
+</div>
 </div>
 
 <!-- SETTINGS -->
@@ -506,6 +529,9 @@ window.nav=function(el,pageId){
         const ago30=new Date(today);ago30.setDate(ago30.getDate()-30);
         document.getElementById('startDate').valueAsDate=ago30;
         document.getElementById('endDate').valueAsDate=today;
+        // Departman raporu için de tarihleri ayarla
+        document.getElementById('deptStartDate').valueAsDate=ago30;
+        document.getElementById('deptEndDate').valueAsDate=today;
         generateReport();
     }
     if(pageId==='users')renderUsers();
@@ -830,6 +856,262 @@ window.generateReport=function(){
             `:`<p style="text-align:center;color:#999;padding:16px">Değerlendirme yok</p>`}
         </div>`;
     }).join('');
+    
+    // Departman select'ini doldur
+    populateDepartmentSelect();
+}
+
+// Departman select'ini doldur
+function populateDepartmentSelect() {
+    const select = document.getElementById('deptSelect');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">Departman seçin...</option>' + 
+        DEPTS.map(d => `<option value="${d.key}">${d.icon} ${d.name}</option>`).join('');
+}
+
+// Departman bazlı detaylı rapor oluştur
+window.generateDepartmentReport = function() {
+    const sd = document.getElementById('deptStartDate').value;
+    const ed = document.getElementById('deptEndDate').value;
+    const deptKey = document.getElementById('deptSelect').value;
+    
+    if (!sd || !ed) return alert('⚠️ Tarih aralığı seçin!');
+    if (!deptKey) return alert('⚠️ Departman seçin!');
+    
+    const dept = DEPTS.find(d => d.key === deptKey);
+    if (!dept) return alert('⚠️ Departman bulunamadı!');
+    
+    const start = new Date(sd);
+    const end = new Date(ed);
+    end.setHours(23, 59, 59, 999);
+    
+    // Tarih aralığındaki anketleri filtrele
+    const filtered = allSurveys.filter(s => {
+        const d = new Date(s.created_at);
+        return d >= start && d <= end;
+    });
+    
+    // Bu departman için değerlendirme yapılmış anketleri filtrele
+    const deptSurveys = filtered.filter(s => getRating(s, deptKey) > 0);
+    
+    const container = document.getElementById('deptReportContainer');
+    
+    if (!deptSurveys.length) {
+        container.innerHTML = \`
+            <div class="empty-state">
+                <div class="e-icon">📭</div>
+                <h2>Bu departman için değerlendirme yok</h2>
+                <p>Seçilen tarih aralığında "\${dept.name}" departmanı için anket bulunamadı</p>
+            </div>\`;
+        return;
+    }
+    
+    // İstatistikleri hesapla
+    const total = deptSurveys.length;
+    const ratingSum = deptSurveys.reduce((sum, s) => sum + getRating(s, deptKey), 0);
+    const avgRating = (ratingSum / total).toFixed(2);
+    const percentage = ((avgRating / 5) * 100).toFixed(1);
+    
+    // Yıldız dağılımı
+    const starDist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+    deptSurveys.forEach(s => {
+        const rating = getRating(s, deptKey);
+        if (rating >= 1 && rating <= 5) starDist[rating]++;
+    });
+    
+    // Yorumları topla (varsa)
+    const comments = deptSurveys
+        .map(s => ({
+            room: s.room_number,
+            date: new Date(s.created_at).toLocaleDateString('tr-TR'),
+            rating: getRating(s, deptKey),
+            comment: s.comments || '',
+            email: s.email || 'Yok'
+        }))
+        .filter(c => c.comment.length > 0);
+    
+    // Günlük trend verileri
+    const dailyData = {};
+    deptSurveys.forEach(s => {
+        const dateStr = new Date(s.created_at).toLocaleDateString('tr-TR');
+        if (!dailyData[dateStr]) {
+            dailyData[dateStr] = {count: 0, sum: 0};
+        }
+        dailyData[dateStr].count++;
+        dailyData[dateStr].sum += getRating(s, deptKey);
+    });
+    
+    const sortedDates = Object.keys(dailyData).sort((a, b) => {
+        const [ad, am, ay] = a.split('.');
+        const [bd, bm, by] = b.split('.');
+        return new Date(ay, am-1, ad) - new Date(by, bm-1, bd);
+    });
+    
+    // Raporu render et
+    container.innerHTML = \`
+        <div style="margin-bottom:24px">
+            <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:30px;border-radius:14px;margin-bottom:20px">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px">
+                    <div>
+                        <h2 style="font-size:32px;margin-bottom:8px">\${dept.icon} \${dept.name}</h2>
+                        <p style="opacity:0.9;font-size:16px">Detaylı Performans Raporu</p>
+                        <p style="opacity:0.8;font-size:14px;margin-top:8px">
+                            📅 \${start.toLocaleDateString('tr-TR')} - \${end.toLocaleDateString('tr-TR')}
+                        </p>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-size:56px;font-weight:700;line-height:1">⭐\${avgRating}</div>
+                        <div style="font-size:24px;opacity:0.9">%\${percentage}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stats-grid" style="margin-bottom:24px">
+                <div class="stat-card">
+                    <div class="s-icon">📊</div>
+                    <div class="s-label">Toplam Değerlendirme</div>
+                    <div class="s-value">\${total}</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="s-icon">⭐</div>
+                    <div class="s-label">Ortalama Puan</div>
+                    <div class="s-value">\${avgRating}</div>
+                </div>
+                <div class="stat-card \${percentage >= 80 ? 'success' : percentage >= 60 ? 'warning' : 'danger'}">
+                    <div class="s-icon">📈</div>
+                    <div class="s-label">Başarı Oranı</div>
+                    <div class="s-value">%\${percentage}</div>
+                </div>
+                <div class="stat-card \${comments.length > 0 ? 'warning' : ''}">
+                    <div class="s-icon">💬</div>
+                    <div class="s-label">Yorum Sayısı</div>
+                    <div class="s-value">\${comments.length}</div>
+                </div>
+            </div>
+            
+            <div class="chart-wrap" style="margin-bottom:24px">
+                <h3>⭐ Yıldız Dağılımı</h3>
+                <div style="padding:20px 0">
+                    \${[5, 4, 3, 2, 1].map(star => {
+                        const count = starDist[star];
+                        const pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                        const color = star >= 4 ? '#10b981' : star === 3 ? '#f59e0b' : '#ef4444';
+                        return \`
+                            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                                <div style="min-width:60px;font-size:14px;font-weight:600">\${star} ⭐</div>
+                                <div style="flex:1;background:#e8e8e8;height:28px;border-radius:14px;overflow:hidden">
+                                    <div style="width:\${pct}%;height:100%;background:\${color};display:flex;align-items:center;padding:0 12px;color:white;font-weight:600;font-size:12px;transition:width 0.5s">
+                                        \${count > 0 ? \`\${count} (\${pct}%)\` : ''}
+                                    </div>
+                                </div>
+                                <div style="min-width:80px;text-align:right;font-size:14px;font-weight:600;color:\${color}">\${count} adet</div>
+                            </div>
+                        \`;
+                    }).join('')}
+                </div>
+            </div>
+            
+            <div class="chart-wrap" style="margin-bottom:24px">
+                <h3>📈 Günlük Ortalama Trend</h3>
+                <div class="bar-chart" style="height:180px">
+                    \${sortedDates.map(date => {
+                        const data = dailyData[date];
+                        const avg = (data.sum / data.count).toFixed(1);
+                        const height = (avg / 5) * 100;
+                        const color = avg >= 4 ? '#10b981' : avg >= 3 ? '#f59e0b' : '#ef4444';
+                        return \`
+                            <div class="bar" style="background:\${color};height:\${height}%;min-width:40px">
+                                <div class="bar-value" style="color:\${color}">⭐\${avg}</div>
+                                <div class="bar-label" style="font-size:9px">\${date}<br>(\${data.count})</div>
+                            </div>
+                        \`;
+                    }).join('')}
+                </div>
+            </div>
+            
+            \${comments.length > 0 ? \`
+                <div class="chart-wrap">
+                    <h3>💬 Müşteri Yorumları (\${comments.length} adet)</h3>
+                    <div style="max-height:500px;overflow-y:auto;padding:10px 0">
+                        \${comments.map(c => \`
+                            <div class="survey-card \${c.rating >= 4 ? 'excellent' : c.rating === 3 ? 'average' : 'poor'}" style="margin-bottom:14px">
+                                <div class="survey-header">
+                                    <div>
+                                        <div class="room-badge">Oda \${c.room}</div>
+                                        <div class="badge-row">
+                                            <div class="date-badge">\${c.date}</div>
+                                            <div class="date-badge">⭐ \${c.rating}</div>
+                                            <div class="date-badge">📧 \${c.email}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="comments-section">
+                                    <p>"\${c.comment}"</p>
+                                </div>
+                            </div>
+                        \`).join('')}
+                    </div>
+                </div>
+            \` : \`
+                <div class="empty-state">
+                    <div class="e-icon">💬</div>
+                    <h3>Yorum Bulunmuyor</h3>
+                    <p>Bu departman için yazılmış yorum yok</p>
+                </div>
+            \`}
+        </div>
+    \`;
+}
+
+// Departman raporunu Excel'e aktar
+window.exportDepartmentReport = function() {
+    const deptKey = document.getElementById('deptSelect').value;
+    if (!deptKey) return alert('⚠️ Önce rapor oluşturun!');
+    
+    const dept = DEPTS.find(d => d.key === deptKey);
+    const sd = document.getElementById('deptStartDate').value;
+    const ed = document.getElementById('deptEndDate').value;
+    
+    if (!sd || !ed) return alert('⚠️ Tarih aralığı seçin!');
+    
+    const start = new Date(sd);
+    const end = new Date(ed);
+    end.setHours(23, 59, 59, 999);
+    
+    const filtered = allSurveys.filter(s => {
+        const d = new Date(s.created_at);
+        return d >= start && d <= end;
+    });
+    
+    const deptSurveys = filtered.filter(s => getRating(s, deptKey) > 0);
+    
+    if (!deptSurveys.length) {
+        return alert('⚠️ Veri bulunamadı!');
+    }
+    
+    // CSV formatında veri hazırla
+    const rows = deptSurveys.map(s => {
+        const date = new Date(s.created_at).toLocaleDateString('tr-TR');
+        const time = new Date(s.created_at).toLocaleTimeString('tr-TR');
+        const rating = getRating(s, deptKey);
+        const comment = (s.comments || '').replace(/"/g, '""');
+        return \`"\${s.room_number}","\${date}","\${time}","\${rating}","\${s.email || 'Yok'}","\${comment}"\`;
+    });
+    
+    const csv = \`Departman: \${dept.name}\\nTarih Aralığı: \${start.toLocaleDateString('tr-TR')} - \${end.toLocaleDateString('tr-TR')}\\n\\nOda,Tarih,Saat,Puan,E-posta,Yorum\\n\${rows.join('\\n')}\`;
+    
+    const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = \`\${dept.name.replace(/\\s+/g, '_')}_rapor_\${new Date().toISOString().slice(0, 10)}.csv\`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('✅ Departman raporu Excel olarak indirildi');
 }
 
 function renderQuestions(){
