@@ -692,8 +692,8 @@ function renderEmails(){
             <td>${e.room_number}</td>
             <td>${new Date(e.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}</td>
             <td>${e.avg.toFixed(1)}★</td>
-            <td style="color:${e.pct>=90?'#10b981':'#ef4444'};font-weight:700">%${e.pct}</td>
-            <td>${e.pct>=90?`<button class="btn btn-info" onclick="openReviewModal('${e.email}','${e.room_number}')">⭐ Yorum İste</button>`:''}</td>
+            <td style="color:${e.pct>=80?'#10b981':'#ef4444'};font-weight:700">%${e.pct}</td>
+            <td>${e.pct>=80?`<button class="btn btn-info" onclick="openReviewModal('${e.email}','${e.room_number}')">⭐ Yorum İste</button>`:''}</td>
         </tr>`).join('')}</tbody>
     </table>`;
 }
@@ -757,9 +757,9 @@ window.sendBulkReviewRequest=function(){
             if(r>0){sum+=r;cnt++;}
         });
         const pct=cnt>0?(sum/cnt/5*100):0;
-        return pct>=90;
+        return pct>=80;
     });
-    if(!highScores.length)return alert('%90+ puan alan misafir yok!');
+    if(!highScores.length)return alert('%80+ puan alan misafir yok!');
     console.log('📧 Toplu mail:',highScores.map(s=>s.email));
     alert(`✅ ${highScores.length} misafir için Google yorum isteği gönderildi!\n\n(Gerçek mail için SMTP config gerekli)`);
 }
