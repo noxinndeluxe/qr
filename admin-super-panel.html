@@ -1290,10 +1290,14 @@ function renderAIAnalyses() {
     const grid = document.getElementById('aiAnalysesGrid');
     if (!grid) return;
     
+    console.log('🔍 renderAIAnalyses çalıştı, toplam analiz:', allAIAnalyses.length);
+    
     let filtered = allAIAnalyses;
     
     // Tarih filtresi
     const dateFilter = document.getElementById('aiFilterDate')?.value;
+    console.log('📅 Seçilen tarih filtresi:', dateFilter);
+    
     if (dateFilter && dateFilter !== 'all') {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -1303,7 +1307,9 @@ function renderAIAnalyses() {
             date.setHours(0, 0, 0, 0);
             
             if (dateFilter === 'today') {
-                return date.getTime() === today.getTime();
+                const match = date.getTime() === today.getTime();
+                console.log('  Bugün kontrolü:', date, '===', today, '→', match);
+                return match;
             } else if (dateFilter === 'yesterday') {
                 const yesterday = new Date(today);
                 yesterday.setDate(yesterday.getDate() - 1);
@@ -1311,7 +1317,9 @@ function renderAIAnalyses() {
             } else if (dateFilter === 'week') {
                 const weekAgo = new Date(today);
                 weekAgo.setDate(weekAgo.getDate() - 7);
-                return date >= weekAgo;
+                const match = date >= weekAgo;
+                console.log('  Bu hafta kontrolü:', date, '>=', weekAgo, '→', match);
+                return match;
             } else if (dateFilter === 'month') {
                 const monthAgo = new Date(today);
                 monthAgo.setMonth(monthAgo.getMonth() - 1);
@@ -1321,23 +1329,32 @@ function renderAIAnalyses() {
                 const end = new Date(aiCustomDateRange.end);
                 start.setHours(0, 0, 0, 0);
                 end.setHours(23, 59, 59, 999);
+                console.log('  Özel aralık kontrolü:', date, '>=', start, '&&', date, '<=', end);
                 return date >= start && date <= end;
             }
             return true;
         });
     }
     
+    console.log('📊 Tarih filtresinden sonra kalan:', filtered.length);
+    
     // Aciliyet filtresi
     const urgencyFilter = document.getElementById('aiFilterUrgency')?.value;
+    console.log('🎯 Aciliyet filtresi:', urgencyFilter);
     if (urgencyFilter && urgencyFilter !== 'all') {
         filtered = filtered.filter(a => a.urgency === urgencyFilter);
     }
     
+    console.log('📊 Aciliyet filtresinden sonra kalan:', filtered.length);
+    
     // Duygu filtresi
     const sentimentFilter = document.getElementById('aiFilterSentiment')?.value;
+    console.log('😊 Duygu filtresi:', sentimentFilter);
     if (sentimentFilter && sentimentFilter !== 'all') {
         filtered = filtered.filter(a => a.sentiment === sentimentFilter);
     }
+    
+    console.log('✅ Toplam gösterilecek analiz:', filtered.length);
     
     if (!filtered.length) {
         grid.innerHTML = `
@@ -1443,9 +1460,13 @@ function renderAIAnalysisCard(analysis) {
 }
 
 function filterAIAnalyses() {
+    console.log('🔄 filterAIAnalyses çağrıldı');
+    
     // Tarih aralığı göster/gizle
     const dateFilter = document.getElementById('aiFilterDate')?.value;
     const customRange = document.getElementById('aiCustomDateRange');
+    
+    console.log('📅 Seçilen filtre:', dateFilter);
     
     if (dateFilter === 'custom') {
         customRange.style.display = 'flex';
@@ -1455,9 +1476,11 @@ function filterAIAnalyses() {
         weekAgo.setDate(weekAgo.getDate() - 7);
         document.getElementById('aiStartDate').value = weekAgo.toISOString().split('T')[0];
         document.getElementById('aiEndDate').value = today;
+        console.log('📆 Özel tarih aralığı gösterildi:', weekAgo.toISOString().split('T')[0], '-', today);
     } else {
         customRange.style.display = 'none';
         aiCustomDateRange = null;
+        console.log('📆 Özel tarih aralığı gizlendi');
     }
     
     renderAIAnalyses();
@@ -1467,6 +1490,8 @@ function filterAIAnalyses() {
 window.applyAIDateRange = function() {
     const startDate = document.getElementById('aiStartDate').value;
     const endDate = document.getElementById('aiEndDate').value;
+    
+    console.log('📆 Özel tarih aralığı uygulanıyor:', startDate, '-', endDate);
     
     if (!startDate || !endDate) {
         alert('⚠️ Lütfen başlangıç ve bitiş tarihlerini seçin!');
@@ -1479,6 +1504,7 @@ window.applyAIDateRange = function() {
     }
     
     aiCustomDateRange = { start: startDate, end: endDate };
+    console.log('✅ Özel tarih aralığı ayarlandı:', aiCustomDateRange);
     renderAIAnalyses();
 }
 
