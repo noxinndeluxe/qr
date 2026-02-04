@@ -1398,7 +1398,7 @@ SADECE bu JSON'u döndür (başka açıklama ekleme):
     }
 }
 
-async function loadAIAnalyses() {
+window.loadAIAnalyses = async function() {
     try {
         const { data, error } = await supabase
             .from('ai_analyses')
@@ -1584,7 +1584,7 @@ function renderAIAnalysisCard(analysis) {
     `;
 }
 
-function filterAIAnalyses() {
+window.filterAIAnalyses = function() {
     // Tarih aralığı göster/gizle
     const dateFilter = document.getElementById('aiFilterDate')?.value;
     const customRange = document.getElementById('aiCustomDateRange');
