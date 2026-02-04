@@ -536,7 +536,7 @@ function renderChart(){
     el.innerHTML=DEPTS.map(d=>{
         const ds=recent.filter(s=>getRating(s,d.key)>0);
         const pct=ds.length?Math.round(ds.reduce((a,s)=>a+getRating(s,d.key),0)/ds.length/5*100):0;
-        const cls=pct>=90?'green':'red';
+        const cls=pct>=80?'green':'red';
         return`<div class="bar ${cls}" style="height:${pct*2}px" title="${d.name}: %${pct}">
             <div class="bar-value ${cls}">%${pct}</div>
             <div class="bar-label">${d.name.length>11?d.name.slice(0,11)+'..':d.name}</div></div>`;
@@ -630,7 +630,7 @@ function renderSurveyCard(s){
     else if(avg>2&&avg<=3)alert='<span class="alert-badge warning">⚠️ İZLE</span>';
     const stars=v=>v?'⭐'.repeat(v)+'☆'.repeat(5-v):'─';
     const isAdmin=curUser.role==='admin';
-    const isHighScore=pct>=90;
+    const isHighScore=pct>=80;
 
     return`<div class="survey-card ${cls}">
         <div class="survey-header">
