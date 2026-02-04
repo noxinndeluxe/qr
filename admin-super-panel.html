@@ -805,15 +805,15 @@ window.generateReport=function(){
     document.getElementById('reportChartWrap').style.display='block';
     const chartEl=document.getElementById('reportChart');
     chartEl.innerHTML=dData.map(d=>{
-        const cls=d.pct>=90?'green':'red';
+        const cls=d.pct>=80?'green':'red';
         return`<div class="bar ${cls}" style="height:${d.pct*2}px" title="${d.name}: %${d.pct}">
             <div class="bar-value ${cls}">%${d.pct}</div>
             <div class="bar-label">${d.name.length>11?d.name.slice(0,11)+'..':d.name}</div></div>`;
     }).join('');
 
     document.getElementById('departmentsGrid').innerHTML=dData.map(d=>{
-        const sc=d.pct>=90?'excellent':'danger';
-        const pc=d.pct>=90?'excellent':'danger';
+        const sc=d.pct>=80?'excellent':'danger';
+        const pc=d.pct>=80?'excellent':'danger';
         return`<div class="dept-card">
             <div class="dept-header"><div class="dept-name">${d.icon} ${d.name}</div><div class="dept-score ${sc}">%${d.pct}</div></div>
             ${d.count?`
