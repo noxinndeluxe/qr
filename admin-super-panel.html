@@ -169,7 +169,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <!-- PANEL -->
 <div id="panel" style="display:none">
 <div class="sidebar">
-<div class="sidebar-logo"><h1><span>🏨</span> <span>Anket v3 beta</span></h1></div>
+<div class="sidebar-logo"><h1><span>🏨</span> <span>Otel Pro</span></h1></div>
 <div class="menu-item active" data-page="dashboard" onclick="nav(this,'dashboard')"><span class="icon">📊</span><span>Ana Sayfa</span></div>
 <div class="menu-item" data-page="surveys" onclick="nav(this,'surveys')"><span class="icon">📋</span><span>Anketler</span></div>
 <div class="menu-item" data-page="emails" onclick="nav(this,'emails')"><span class="icon">📧</span><span>E-postalar</span></div>
@@ -178,7 +178,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <div class="menu-item" data-page="settings" onclick="nav(this,'settings')"><span class="icon">⚙️</span><span>Ayarlar</span></div>
 <div class="menu-item" data-page="users" onclick="nav(this,'users')"><span class="icon">👥</span><span>Kullanıcılar</span></div>
 <div class="sidebar-bottom">
-<div class="user-info">
+<div class="user-info" onclick="openPasswordChangeModal()" style="cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
 <div class="user-avatar" id="avatarInit">A</div>
 <div><div class="user-name" id="curUserName">admin</div><div class="user-role" id="curUserRole">Admin</div></div>
 </div>
@@ -244,7 +244,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 
 <!-- REPORTS -->
 <div id="reports" class="page">
-<div class="page-header"><h2>📈 Raporlar</h2><p>Genel Rapor ve Departman Bazlı Memnuniyet Raporu Alabilirsiniz.</p></div>
+<div class="page-header"><h2>📈 Departman Raporu</h2><p>Performans analizi</p></div>
 
 <!-- Genel Rapor Bölümü -->
 <div style="background:white;padding:20px;border-radius:14px;margin-bottom:24px;box-shadow:0 3px 14px rgba(0,0,0,.08)">
@@ -315,16 +315,6 @@ Groq API Key'inizi girin.
 <!-- USERS -->
 <div id="users" class="page">
 <div class="page-header"><h2>👥 Kullanıcı Yönetimi</h2><p>Yönetici hesapları</p></div>
-<div class="add-user-form">
-<h3>🔑 Şifremi Değiştir</h3>
-<div class="form-row">
-<input type="password" id="oldPassword" placeholder="Mevcut şifre">
-<input type="password" id="newPasswordChange" placeholder="Yeni şifre">
-<input type="password" id="confirmPassword" placeholder="Yeni şifre (tekrar)">
-<button class="btn btn-primary" onclick="changePassword()">Değiştir</button>
-</div>
-<div class="login-error" id="changePassError" style="margin-top:12px"></div>
-</div>
 <div class="add-user-form" id="addUserForm">
 <h3>➕ Yeni Kullanıcı Ekle</h3>
 <div class="form-row">
@@ -398,6 +388,22 @@ Groq API Key'inizi girin.
 <div class="modal-buttons">
 <button class="btn btn-success" onclick="sendReviewEmail()">📤 Gönder</button>
 <button class="btn btn-danger" onclick="closeModal()">İptal</button>
+</div>
+</div>
+</div>
+
+<!-- ŞİFRE DEĞİŞTİRME MODAL -->
+<div id="passwordChangeModal" class="modal">
+<div class="modal-content">
+<h3>🔒 Şifre Değiştir</h3>
+<p style="margin-bottom:16px;color:#666;font-size:14px">Kullanıcı: <strong id="modalUsername"></strong></p>
+<div class="login-error" id="passwordChangeError" style="margin-bottom:16px"></div>
+<input type="password" id="currentPassword" placeholder="Mevcut şifre" class="login-input" style="margin-bottom:12px">
+<input type="password" id="newPassword" placeholder="Yeni şifre" class="login-input" style="margin-bottom:12px">
+<input type="password" id="confirmNewPassword" placeholder="Yeni şifre (tekrar)" class="login-input" style="margin-bottom:16px">
+<div class="modal-buttons">
+<button class="btn btn-success" onclick="savePasswordChange()">💾 Kaydet</button>
+<button class="btn btn-danger" onclick="closePasswordChangeModal()">İptal</button>
 </div>
 </div>
 </div>
@@ -774,6 +780,80 @@ window.sendReviewEmail=function(){
     closeModal();
 }
 
+// Şifre değiştirme modal fonksiyonları
+window.openPasswordChangeModal = function() {
+    document.getElementById('modalUsername').textContent = curUser.username;
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
+    const errEl = document.getElementById('passwordChangeError');
+    errEl.classList.remove('show');
+    document.getElementById('passwordChangeModal').classList.add('show');
+}
+
+window.closePasswordChangeModal = function() {
+    document.getElementById('passwordChangeModal').classList.remove('show');
+}
+
+window.savePasswordChange = async function() {
+    const currentPass = document.getElementById('currentPassword').value;
+    const newPass = document.getElementById('newPassword').value;
+    const confirmPass = document.getElementById('confirmNewPassword').value;
+    const errEl = document.getElementById('passwordChangeError');
+    
+    errEl.classList.remove('show');
+    
+    // Validasyon
+    if (!currentPass || !newPass || !confirmPass) {
+        errEl.textContent = '⚠️ Tüm alanları doldurun!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    if (newPass.length < 4) {
+        errEl.textContent = '⚠️ Yeni şifre en az 4 karakter olmalı!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    if (newPass !== confirmPass) {
+        errEl.textContent = '⚠️ Yeni şifreler eşleşmiyor!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        // Mevcut şifreyi kontrol et
+        const currentHash = await sha256(currentPass);
+        if (currentHash !== curUser.password_hash) {
+            errEl.textContent = '⚠️ Mevcut şifre yanlış!';
+            errEl.classList.add('show');
+            return;
+        }
+        
+        // Yeni şifreyi hashle ve güncelle
+        const newHash = await sha256(newPass);
+        const { error } = await supabase
+            .from('users')
+            .update({ password_hash: newHash })
+            .eq('id', curUser.id);
+        
+        if (error) throw error;
+        
+        // Başarılı
+        curUser.password_hash = newHash;
+        sessionStorage.setItem('hotel_user', JSON.stringify(curUser));
+        
+        alert('✅ Şifreniz başarıyla değiştirildi!');
+        closePasswordChangeModal();
+        
+    } catch (error) {
+        console.error('Şifre değiştirme hatası:', error);
+        errEl.textContent = '❌ Şifre değiştirilemedi: ' + error.message;
+        errEl.classList.add('show');
+    }
+}
+
 window.sendBulkReviewRequest=function(){
     const highScores=allSurveys.filter(s=>{
         if(!s.email)return false;
@@ -1146,33 +1226,6 @@ window.deleteUser=async function(id,name){
         allUsers=allUsers.filter(u=>u.id!==id);
         renderUsers();
     }catch(e){console.error(e);alert('Silme başarısız!')}
-}
-
-window.changePassword=async function(){
-    const oldPass=document.getElementById('oldPassword').value;
-    const newPass=document.getElementById('newPasswordChange').value;
-    const confirm=document.getElementById('confirmPassword').value;
-    const errEl=document.getElementById('changePassError');
-    errEl.classList.remove('show');
-    if(!oldPass||!newPass||!confirm){errEl.textContent='⚠️ Tüm alanları doldurun!';errEl.classList.add('show');return}
-    if(newPass!==confirm){errEl.textContent='⚠️ Yeni şifreler eşleşmiyor!';errEl.classList.add('show');return}
-    if(newPass.length<4){errEl.textContent='⚠️ Yeni şifre en az 4 karakter!';errEl.classList.add('show');return}
-    try{
-        const oldHash=await sha256(oldPass);
-        if(oldHash!==curUser.password_hash){errEl.textContent='⚠️ Mevcut şifre yanlış!';errEl.classList.add('show');return}
-        const newHash=await sha256(newPass);
-        const{error}=await supabase.from('users').update({password_hash:newHash}).eq('id',curUser.id);
-        if(error)throw error;
-        curUser.password_hash=newHash;
-        sessionStorage.setItem('hotel_user',JSON.stringify(curUser));
-        document.getElementById('oldPassword').value='';
-        document.getElementById('newPasswordChange').value='';
-        document.getElementById('confirmPassword').value='';
-        errEl.style.background='#d1fae5';errEl.style.color='#059669';errEl.style.borderColor='#10b981';
-        errEl.textContent='✅ Şifreniz değiştirildi!';
-        errEl.classList.add('show');
-        setTimeout(()=>{errEl.classList.remove('show');errEl.style.background='#fee2e2';errEl.style.color='#dc2626';errEl.style.borderColor='#ef4444'},3000);
-    }catch(e){console.error(e);errEl.textContent='⚠️ Şifre değiştirilemedi!';errEl.classList.add('show')}
 }
 
 document.querySelectorAll('.filter-btn').forEach(btn=>{
