@@ -557,6 +557,7 @@ async function loadData(){
         allSurveys=survRes.data||[];
         allUsers=usrRes.data||[];
         await loadQuestions();
+        await initEmailJS();
         updateDashboard();updateSurveysStats();renderSurveys();renderUsers();renderEmails();renderQuestions();
     }catch(e){console.error(e)}
 }
@@ -1379,6 +1380,24 @@ async function loadGroqKey(){
 }
 
 // EmailJS Ayarları
+// EmailJS'i başlat (sayfa yüklendiğinde)
+async function initEmailJS() {
+    try {
+        const { data: publicKeyData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_public_key')
+            .single();
+        
+        if (publicKeyData && publicKeyData.setting_value) {
+            emailjs.init(publicKeyData.setting_value);
+            console.log('✅ EmailJS initialized');
+        }
+    } catch (e) {
+        console.log('EmailJS ayarları yok (henüz yapılmadı)');
+    }
+}
+
 async function loadEmailJSSettings() {
     try {
         const settings = ['emailjs_service_id', 'emailjs_template_id', 'emailjs_public_key', 'emailjs_from_email', 'emailjs_from_name'];
