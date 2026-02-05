@@ -1463,31 +1463,43 @@ window.saveEmailJSSettings = async function() {
             { key: 'emailjs_from_name', value: fromName }
         ];
         
+        // Her ayarı upsert ile kaydet
         for (const setting of settings) {
-            const { data: existing } = await supabase
+            const { error } = await supabase
                 .from('ai_settings')
-                .select('id')
-                .eq('setting_key', setting.key)
-                .single();
+                .upsert({
+                    setting_key: setting.key,
+                    setting_value: setting.value,
+                    updated_at: new Date().toISOString(),
+                    updated_by: curUser.username
+                }, {
+                    onConflict: 'setting_key'
+                });
             
-            if (existing) {
-                await supabase
-                    .from('ai_settings')
-                    .update({ setting_value: setting.value, updated_at: new Date().toISOString() })
-                    .eq('setting_key', setting.key);
-            } else {
-                await supabase
-                    .from('ai_settings')
-                    .insert([{ setting_key: setting.key, setting_value: setting.value }]);
+            if (error) {
+                console.error(`${setting.key} kaydedilemedi:`, error);
+                throw error;
             }
+            
+            console.log(`✅ ${setting.key} kaydedildi:`, setting.value);
         }
         
         // EmailJS'i initialize et
         emailjs.init(publicKey);
         
         statusEl.style.display = 'block';
-        statusEl.textContent = '✅ EmailJS ayarları kaydedildi! Artık gerçek mail gönderebilirsiniz.';
-        console.log('✅ EmailJS ayarları kaydedildi');
+        statusEl.textContent = '✅ EmailJS ayarları kaydedildi ve veritabanına yazıldı!';
+        console.log('✅ Tüm EmailJS ayarları başarıyla kaydedildi');
+        
+        // 5 saniye sonra status mesajını gizle
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+    } catch (e) {
+        console.error('EmailJS ayarları kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Ayarlar kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
         
     } catch (e) {
         console.error('EmailJS ayarları kaydetme hatası:', e);
