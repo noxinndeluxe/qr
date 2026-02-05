@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Otel Yönetim Paneli Pro</title>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#1e3c72,#2a5298);min-height:100vh}
@@ -299,6 +300,39 @@ Groq API Key'inizi girin.
 </div>
 </div>
 
+<div class="add-user-form" style="background:#fff4e6;border:2px solid #f59e0b">
+<h3>📧 EmailJS Ayarları (Mail Gönderimi - Ücretsiz!)</h3>
+<p style="color:#666;font-size:13px;margin-bottom:12px">
+EmailJS ile otomatik mail gönderimi yapabilirsiniz (200 mail/ay ücretsiz). 
+<a href="https://www.emailjs.com/" target="_blank" style="color:#f59e0b;font-weight:600">👉 EmailJS hesabı oluşturun</a>
+</p>
+<div style="display:grid;gap:12px;margin-bottom:12px">
+<div class="form-row">
+<input type="text" id="emailjsServiceId" placeholder="Service ID (örn: service_abc123)" style="flex:1">
+</div>
+<div class="form-row">
+<input type="text" id="emailjsTemplateId" placeholder="Template ID (örn: template_xyz789)" style="flex:1">
+</div>
+<div class="form-row">
+<input type="text" id="emailjsPublicKey" placeholder="Public Key (örn: abcXYZ123)" style="flex:1">
+</div>
+<div class="form-row">
+<input type="email" id="emailjsFromEmail" placeholder="Gönderici E-posta (otelden@example.com)" style="flex:1">
+</div>
+<div class="form-row">
+<input type="text" id="emailjsFromName" placeholder="Gönderici Adı (Noxinn Deluxe Hotel)" style="flex:1">
+</div>
+</div>
+<button class="btn btn-primary" onclick="saveEmailJSSettings()" style="width:100%">💾 EmailJS Ayarlarını Kaydet</button>
+<div class="login-error" id="emailjsError" style="margin-top:12px"></div>
+<div id="emailjsStatus" style="margin-top:12px;display:none;padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;color:#059669">
+✅ EmailJS ayarları kaydedildi! Artık gerçek mail gönderebilirsiniz.
+</div>
+<button class="btn btn-info" onclick="testEmailJS()" style="width:100%;margin-top:12px" id="testEmailBtn">
+📤 Test Maili Gönder (Kendinize)
+</button>
+</div>
+
 <div class="add-user-form">
 <h3>➕ Yeni Soru Ekle</h3>
 <div class="form-row">
@@ -544,7 +578,7 @@ window.nav=function(el,pageId){
     if(pageId==='users')renderUsers();
     if(pageId==='emails')renderEmails();
     if(pageId==='ai-analyses')loadAIAnalyses();
-    if(pageId==='settings'){renderQuestions();loadGroqKey();}
+    if(pageId==='settings'){renderQuestions();loadGroqKey();loadEmailJSSettings();}
 }
 
 function updateDashboard(){
@@ -774,13 +808,83 @@ window.closeModal=function(){
     currentReviewEmail='';
 }
 
-window.sendReviewEmail=function(){
-    const msg=document.getElementById('reviewMessage').value;
-    console.log('📧 Mail gönderilecek:',currentReviewEmail);
-    console.log('📝 İçerik:',msg);
-    alert(`✅ Mail gönderildi: ${currentReviewEmail}\n\n(Gerçek mail gönderimi için SMTP ayarları gerekli)`);
-    closeModal();
+window.sendReviewEmail = async function() {
+    const msg = document.getElementById('reviewMessage').value;
+    
+    if (!msg.trim()) {
+        alert('⚠️ Lütfen mail içeriğini yazın!');
+        return;
+    }
+    
+    // EmailJS ayarlarını kontrol et
+    try {
+        const { data: serviceIdData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_service_id')
+            .single();
+        
+        const { data: templateIdData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_template_id')
+            .single();
+        
+        const { data: publicKeyData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_public_key')
+            .single();
+        
+        const { data: fromNameData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_from_name')
+            .single();
+        
+        if (!serviceIdData || !templateIdData || !publicKeyData) {
+            alert('⚠️ EmailJS ayarları yapılmamış!\n\nAyarlar sayfasından EmailJS bilgilerinizi girin.');
+            closeModal();
+            return;
+        }
+        
+        const serviceId = serviceIdData.setting_value;
+        const templateId = templateIdData.setting_value;
+        const publicKey = publicKeyData.setting_value;
+        const hotelName = fromNameData?.setting_value || 'Otel Yönetim Paneli';
+        
+        // EmailJS'i initialize et
+        emailjs.init(publicKey);
+        
+        // Mail gönder
+        const templateParams = {
+            to_email: currentReviewEmail,
+            to_name: 'Değerli Misafirimiz',
+            subject: 'Google Yorumunuzu Bekliyoruz',
+            message: msg,
+            hotel_name: hotelName,
+            room_number: ''
+        };
+        
+        // Butonu disable et
+        const sendBtn = event?.target;
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.textContent = '⏳ Gönderiliyor...';
+        }
+        
+        await emailjs.send(serviceId, templateId, templateParams);
+        
+        console.log('✅ Mail gönderildi:', currentReviewEmail);
+        alert(`✅ Mail başarıyla gönderildi!\n\n${currentReviewEmail}`);
+        closeModal();
+        
+    } catch (error) {
+        console.error('Mail gönderme hatası:', error);
+        alert('❌ Mail gönderilemedi:\n\n' + (error.text || error.message));
+    }
 }
+
 
 // Şifre değiştirme modal fonksiyonları
 window.openPasswordChangeModal = function() {
@@ -856,20 +960,110 @@ window.savePasswordChange = async function() {
     }
 }
 
-window.sendBulkReviewRequest=function(){
-    const highScores=allSurveys.filter(s=>{
-        if(!s.email)return false;
-        let sum=0,cnt=0;
-        DEPTS.forEach(d=>{
-            const r=getRating(s,d.key);
-            if(r>0){sum+=r;cnt++;}
+window.sendBulkReviewRequest = async function() {
+    const highScores = allSurveys.filter(s => {
+        if (!s.email) return false;
+        let sum = 0, cnt = 0;
+        DEPTS.forEach(d => {
+            const r = getRating(s, d.key);
+            if (r > 0) { sum += r; cnt++; }
         });
-        const pct=cnt>0?(sum/cnt/5*100):0;
-        return pct>=80;
+        const pct = cnt > 0 ? (sum / cnt / 5 * 100) : 0;
+        return pct >= 90; // %90+ için yorum isteği
     });
-    if(!highScores.length)return alert('%80+ puan alan misafir yok!');
-    console.log('📧 Toplu mail:',highScores.map(s=>s.email));
-    alert(`✅ ${highScores.length} misafir için Google yorum isteği gönderildi!\n\n(Gerçek mail için SMTP config gerekli)`);
+    
+    if (!highScores.length) {
+        return alert('⚠️ %90+ puan alan misafir yok!');
+    }
+    
+    if (!confirm(`${highScores.length} misafire Google yorum isteği göndermek istiyor musunuz?`)) {
+        return;
+    }
+    
+    // EmailJS ayarlarını kontrol et
+    try {
+        const { data: serviceIdData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_service_id')
+            .single();
+        
+        const { data: templateIdData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_template_id')
+            .single();
+        
+        const { data: publicKeyData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_public_key')
+            .single();
+        
+        const { data: fromNameData } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'emailjs_from_name')
+            .single();
+        
+        if (!serviceIdData || !templateIdData || !publicKeyData) {
+            alert('⚠️ EmailJS ayarları yapılmamış!\n\nAyarlar sayfasından EmailJS bilgilerinizi girin.');
+            return;
+        }
+        
+        const serviceId = serviceIdData.setting_value;
+        const templateId = templateIdData.setting_value;
+        const publicKey = publicKeyData.setting_value;
+        const hotelName = fromNameData?.setting_value || 'Otel Yönetim Paneli';
+        
+        emailjs.init(publicKey);
+        
+        const defaultMessage = `Merhaba,
+
+${hotelName}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
+
+Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
+
+Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
+
+Zamanınız için teşekkürler!
+
+Sevgilerle,
+${hotelName}`;
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const survey of highScores) {
+            try {
+                const templateParams = {
+                    to_email: survey.email,
+                    to_name: 'Değerli Misafirimiz',
+                    subject: 'Google Yorumunuzu Bekliyoruz',
+                    message: defaultMessage,
+                    hotel_name: hotelName,
+                    room_number: survey.room_number || ''
+                };
+                
+                await emailjs.send(serviceId, templateId, templateParams);
+                successCount++;
+                console.log('✅ Mail gönderildi:', survey.email);
+                
+                // Rate limit için bekle (EmailJS free plan: 200 mail/ay, rate limit var)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+            } catch (error) {
+                failCount++;
+                console.error('Mail gönderme hatası:', survey.email, error);
+            }
+        }
+        
+        alert(`📧 Toplu mail gönderimi tamamlandı!\n\n✅ Başarılı: ${successCount}\n❌ Hata: ${failCount}`);
+        
+    } catch (error) {
+        console.error('Toplu mail hatası:', error);
+        alert('❌ Toplu mail gönderilemedi:\n\n' + error.message);
+    }
 }
 
 window.generateReport=function(){
@@ -1181,6 +1375,151 @@ async function loadGroqKey(){
         }
     } catch(e) {
         console.error('API Key yükleme hatası:', e);
+    }
+}
+
+// EmailJS Ayarları
+async function loadEmailJSSettings() {
+    try {
+        const settings = ['emailjs_service_id', 'emailjs_template_id', 'emailjs_public_key', 'emailjs_from_email', 'emailjs_from_name'];
+        
+        for (const key of settings) {
+            const { data, error } = await supabase
+                .from('ai_settings')
+                .select('setting_value')
+                .eq('setting_key', key)
+                .single();
+            
+            if (data && data.setting_value) {
+                const inputId = key.replace(/_/g, '');
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.value = data.setting_value;
+                }
+            }
+        }
+        
+        // Eğer tüm ayarlar yüklendiyse status göster
+        const serviceId = document.getElementById('emailjsServiceId').value;
+        if (serviceId) {
+            document.getElementById('emailjsStatus').style.display = 'block';
+            console.log('✅ EmailJS ayarları yüklendi');
+        }
+    } catch (e) {
+        console.error('EmailJS ayarları yükleme hatası:', e);
+    }
+}
+
+window.saveEmailJSSettings = async function() {
+    const serviceId = document.getElementById('emailjsServiceId').value.trim();
+    const templateId = document.getElementById('emailjsTemplateId').value.trim();
+    const publicKey = document.getElementById('emailjsPublicKey').value.trim();
+    const fromEmail = document.getElementById('emailjsFromEmail').value.trim();
+    const fromName = document.getElementById('emailjsFromName').value.trim();
+    
+    const errEl = document.getElementById('emailjsError');
+    const statusEl = document.getElementById('emailjsStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (!serviceId || !templateId || !publicKey) {
+        errEl.textContent = '⚠️ Service ID, Template ID ve Public Key zorunludur!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    if (fromEmail && !fromEmail.includes('@')) {
+        errEl.textContent = '⚠️ Geçerli bir e-posta adresi girin!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const settings = [
+            { key: 'emailjs_service_id', value: serviceId },
+            { key: 'emailjs_template_id', value: templateId },
+            { key: 'emailjs_public_key', value: publicKey },
+            { key: 'emailjs_from_email', value: fromEmail },
+            { key: 'emailjs_from_name', value: fromName }
+        ];
+        
+        for (const setting of settings) {
+            const { data: existing } = await supabase
+                .from('ai_settings')
+                .select('id')
+                .eq('setting_key', setting.key)
+                .single();
+            
+            if (existing) {
+                await supabase
+                    .from('ai_settings')
+                    .update({ setting_value: setting.value, updated_at: new Date().toISOString() })
+                    .eq('setting_key', setting.key);
+            } else {
+                await supabase
+                    .from('ai_settings')
+                    .insert([{ setting_key: setting.key, setting_value: setting.value }]);
+            }
+        }
+        
+        // EmailJS'i initialize et
+        emailjs.init(publicKey);
+        
+        statusEl.style.display = 'block';
+        statusEl.textContent = '✅ EmailJS ayarları kaydedildi! Artık gerçek mail gönderebilirsiniz.';
+        console.log('✅ EmailJS ayarları kaydedildi');
+        
+    } catch (e) {
+        console.error('EmailJS ayarları kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Ayarlar kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+window.testEmailJS = async function() {
+    const serviceId = document.getElementById('emailjsServiceId').value.trim();
+    const templateId = document.getElementById('emailjsTemplateId').value.trim();
+    const publicKey = document.getElementById('emailjsPublicKey').value.trim();
+    const fromEmail = document.getElementById('emailjsFromEmail').value.trim();
+    const fromName = document.getElementById('emailjsFromName').value.trim();
+    
+    if (!serviceId || !templateId || !publicKey) {
+        alert('⚠️ Önce EmailJS ayarlarını kaydedin!');
+        return;
+    }
+    
+    if (!curUser.email && !fromEmail) {
+        alert('⚠️ Test maili göndermek için "Gönderici E-posta" alanını doldurun!');
+        return;
+    }
+    
+    const testBtn = document.getElementById('testEmailBtn');
+    testBtn.disabled = true;
+    testBtn.textContent = '⏳ Gönderiliyor...';
+    
+    try {
+        emailjs.init(publicKey);
+        
+        const templateParams = {
+            to_email: fromEmail || curUser.email,
+            to_name: curUser.username,
+            subject: 'EmailJS Test Maili',
+            message: 'Bu bir test mailidir. EmailJS entegrasyonunuz başarıyla çalışıyor! 🎉\n\nOtel Yönetim Paneli Pro',
+            hotel_name: fromName || 'Otel Yönetim Paneli',
+            room_number: 'TEST'
+        };
+        
+        await emailjs.send(serviceId, templateId, templateParams);
+        
+        alert('✅ Test maili başarıyla gönderildi!\n\n' + (fromEmail || curUser.email) + ' adresini kontrol edin.');
+        
+    } catch (error) {
+        console.error('Test maili hatası:', error);
+        alert('❌ Test maili gönderilemedi:\n\n' + error.text);
+    } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = '📤 Test Maili Gönder (Kendinize)';
     }
 }
 
