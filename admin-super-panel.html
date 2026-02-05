@@ -200,7 +200,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <div class="action-card" onclick="nav(document.querySelector('[data-page=surveys]'),'surveys')"><div class="a-icon">📋</div><h3>Anketler</h3><p>Tüm anketler</p></div>
 <div class="action-card" onclick="nav(document.querySelector('[data-page=emails]'),'emails')"><div class="a-icon">📧</div><h3>E-postalar</h3><p>Misafir mailleri</p></div>
 <div class="action-card" onclick="nav(document.querySelector('[data-page=reports]'),'reports')"><div class="a-icon">📈</div><h3>Raporlar</h3><p>Performans</p></div>
-<div class="action-card" onclick="nav(document.querySelector('[data-page=settings]'),'settings')"><div class="a-icon">⚙️</div><h3>Ayarlar</h3><p>Soru yönetimi</p></div>
+<div class="action-card" id="settingsQuickAction" onclick="nav(document.querySelector('[data-page=settings]'),'settings')"><div class="a-icon">⚙️</div><h3>Ayarlar</h3><p>Soru yönetimi</p></div>
 </div>
 <div class="chart-wrap"><h3>📊 Departman Performansı (Son 30 Gün)</h3><div class="bar-chart" id="dashChart"></div></div>
 </div>
@@ -482,6 +482,8 @@ async function showPanel(){
     usersMenu.style.display=curUser.role==='admin'?'flex':'none';
     const settingsMenu=document.querySelector('[data-page=settings]');
     settingsMenu.style.display=curUser.role==='admin'?'flex':'none';
+    const settingsQuickAction=document.getElementById('settingsQuickAction');
+    if(settingsQuickAction)settingsQuickAction.style.display=curUser.role==='admin'?'block':'none';
     await loadData();
 }
 
