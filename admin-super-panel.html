@@ -557,9 +557,13 @@ async function loadData(){
         allSurveys=survRes.data||[];
         allUsers=usrRes.data||[];
         await loadQuestions();
-        await initEmailJS();
+        try {
+            await initEmailJS();
+        } catch(emailErr) {
+            console.log('EmailJS yükleme atlandı:', emailErr.message);
+        }
         updateDashboard();updateSurveysStats();renderSurveys();renderUsers();renderEmails();renderQuestions();
-    }catch(e){console.error(e)}
+    }catch(e){console.error('loadData hatası:',e)}
 }
 
 window.nav=function(el,pageId){
@@ -1493,13 +1497,6 @@ window.saveEmailJSSettings = async function() {
         
         // 5 saniye sonra status mesajını gizle
         setTimeout(() => statusEl.style.display = 'none', 5000);
-        
-    } catch (e) {
-        console.error('EmailJS ayarları kaydetme hatası:', e);
-        errEl.textContent = '⚠️ Ayarlar kaydedilemedi: ' + e.message;
-        errEl.classList.add('show');
-    }
-}
         
     } catch (e) {
         console.error('EmailJS ayarları kaydetme hatası:', e);
