@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otel Misafir Geri Bildirim Sistemi</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+            min-height: 100vh;
+        }
+
+        #root {
+            min-height: 100vh;
+        }
+
+        /* Login Styles */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .hotel-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .login-header h1 {
+            font-size: 28px;
+            color: #1e3a8a;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: white;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            border-left: 4px solid #ef4444;
+        }
+
+        .login-button {
+            padding: 16px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+        }
+
+        .login-footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .login-footer p {
+            margin: 4px 0;
+        }
+
+        .login-footer strong {
+            color: #334155;
+        }
+
+        /* App Container */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            background: #f1f5f9;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1e3a8a 0%, #312e81 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-header {
+            padding: 32px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo .hotel-icon {
+            font-size: 48px;
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .logo p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sidebar-nav button {
+            padding: 14px 20px;
+            background: transparent;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-family: inherit;
+        }
+
+        .sidebar-nav button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-nav button.active {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .sidebar-footer {
+            padding: 24px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            background: rgba(251, 191, 36, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fbbf24;
+            font-size: 20px;
+        }
+
+        .user-info-small .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .user-info-small .user-role {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.2);
+            color: white;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        /* Filters Bar */
+        .filters-bar {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: end;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 160px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        /* Dashboard */
+        .dashboard-container {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card.total {
+            border-color: #3b82f6;
+        }
+
+        .stat-card.complaints {
+            border-color: #ef4444;
+        }
+
+        .stat-card.positive {
+            border-color: #22c55e;
+        }
+
+        .stat-card.open {
+            border-color: #f59e0b;
+        }
+
+        .stat-icon {
+            font-size: 48px;
+            opacity: 0.9;
+        }
+
+        .stat-content h3 {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-card h3 {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 24px;
+            font-weight: 700;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .recent-feedbacks {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .recent-feedbacks h3 {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .feedback-list-mini {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .feedback-item-mini {
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+
+        .feedback-item-mini:hover {
+            border-color: #fbbf24;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.1);
+        }
+
+        .feedback-item-mini.complaint {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .feedback-item-mini.positive {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .feedback-header-mini {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .feedback-item-mini h4 {
+            font-size: 16px;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .feedback-item-mini p {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .feedback-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #64748b;
+            flex-wrap: wrap;
+        }
+
+        /* Feedback List View */
+        .feedback-list-view,
+        .user-management-view {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .view-header h2 {
+            font-size: 28px;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .feedback-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .feedback-card {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+
+        .feedback-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .feedback-card.complaint {
+            border-left-color: #ef4444;
+        }
+
+        .feedback-card.positive {
+            border-left-color: #22c55e;
+        }
+
+        .feedback-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .feedback-card-header > div {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge.complaint {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge.positive {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.status-open {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.status-closed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge.admin {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.user {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .department-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            padding: 8px;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+        }
+
+        .icon-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .icon-btn.danger {
+            color: #ef4444;
+        }
+
+        .icon-btn.danger:hover {
+            background: #fee2e2;
+        }
+
+        .feedback-card h3 {
+            font-size: 20px;
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .feedback-description {
+            font-size: 15px;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .feedback-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .detail-item {
+            display: flex;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        /* User Management */
+        .user-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .user-card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .user-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .user-avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info h3 {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .user-info p {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Buttons */
+        .btn-primary, .btn-secondary {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .modal-header {
+            padding: 28px 32px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-family: inherit;
+        }
+
+        .close-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .modal-form {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: relative;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .filters-bar {
+                padding: 16px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Departman listesi
+        const DEPARTMENTS = [
+            'Yemek ve İçecek',
+            'Temizlik',
+            'Ön Büro',
+            'Misafir İlişkileri',
+            'Güvenlik ve Cankurtaran',
+            'Teknik Servis',
+            'Animasyon ve Eğlence',
+            'Diğer'
+        ];
+
+        // LocalStorage'dan veri okuma/yazma
+        const getStoredData = (key, defaultValue) => {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : defaultValue;
+            } catch {
+                return defaultValue;
+            }
+        };
+
+        const setStoredData = (key, value) => {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (e) {
+                console.error('LocalStorage hatası:', e);
+            }
+        };
+
+        // Varsayılan veriler
+        const DEFAULT_USERS = [
+            { id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Yönetici' },
+            { id: 2, username: 'kullanici', password: 'kullanici123', role: 'user', name: 'Personel' }
+        ];
+
+        const DEFAULT_FEEDBACKS = [
+            {
+                id: 1,
+                type: 'complaint',
+                department: 'Yemek ve İçecek',
+                title: 'Kahvaltı geç servis edildi',
+                description: 'Misafir kahvaltının 30 dakika gecikmeli geldiğini belirtti',
+                guestName: 'Ahmet Yılmaz',
+                roomNumber: '305',
+                date: '2026-02-01',
+                createdBy: 'admin',
+                status: 'open'
+            },
+            {
+                id: 2,
+                type: 'positive',
+                department: 'Temizlik',
+                title: 'Oda temizliği mükemmeldi',
+                description: 'Misafir oda temizliği hizmetinden çok memnun kaldığını belirtti',
+                guestName: 'Ayşe Demir',
+                roomNumber: '512',
+                date: '2026-02-02',
+                createdBy: 'admin',
+                status: 'closed'
+            },
+            {
+                id: 3,
+                type: 'complaint',
+                department: 'Ön Büro',
+                title: 'Check-in işlemi uzun sürdü',
+                description: 'Resepsiyonda 20 dakika bekletildiğini söyledi',
+                guestName: 'Mehmet Kaya',
+                roomNumber: '208',
+                date: '2026-02-03',
+                createdBy: 'admin',
+                status: 'open'
+            },
+            {
+                id: 4,
+                type: 'positive',
+                department: 'Animasyon ve Eğlence',
+                title: 'Çocuk animasyonu harika',
+                description: 'Çocukların animasyon ekibinden çok keyif aldığını belirtti',
+                guestName: 'Zeynep Arslan',
+                roomNumber: '425',
+                date: '2026-02-04',
+                createdBy: 'kullanici',
+                status: 'closed'
+            }
+        ];
+
+        // Chart Component
+        function ChartComponent({ type, data, chartId }) {
+            const chartRef = useRef(null);
+            const chartInstanceRef = useRef(null);
+
+            useEffect(() => {
+                if (!chartRef.current) return;
+
+                // Eski grafiği temizle
+                if (chartInstanceRef.current) {
+                    chartInstanceRef.current.destroy();
+                }
+
+                const ctx = chartRef.current.getContext('2d');
+
+                if (type === 'bar') {
+                    chartInstanceRef.current = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(d => d.name),
+                            datasets: [
+                                {
+                                    label: 'Şikayet',
+                                    data: data.map(d => d.complaints),
+                                    backgroundColor: '#ef4444',
+                                },
+                                {
+                                    label: 'Olumlu',
+                                    data: data.map(d => d.positive),
+                                    backgroundColor: '#22c55e',
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else if (type === 'pie') {
+                    chartInstanceRef.current = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.map(d => d.name),
+                            datasets: [{
+                                data: data.map(d => d.value),
+                                backgroundColor: data.map(d => d.color),
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                }
+                            }
+                        }
+                    });
+                }
+
+                return () => {
+                    if (chartInstanceRef.current) {
+                        chartInstanceRef.current.destroy();
+                    }
+                };
+            }, [type, data]);
+
+            return <canvas ref={chartRef}></canvas>;
+        }
+
+        // Ana Uygulama Komponenti
+        function HotelFeedbackSystem() {
+            const [currentUser, setCurrentUser] = useState(null);
+            const [users, setUsers] = useState(() => getStoredData('hotel_users', DEFAULT_USERS));
+            const [feedbacks, setFeedbacks] = useState(() => getStoredData('hotel_feedbacks', DEFAULT_FEEDBACKS));
+            const [currentView, setCurrentView] = useState('dashboard');
+            const [filters, setFilters] = useState({
+                department: 'all',
+                type: 'all',
+                dateFrom: '',
+                dateTo: '',
+                status: 'all'
+            });
+            const [showModal, setShowModal] = useState(false);
+            const [modalType, setModalType] = useState('');
+            const [editingItem, setEditingItem] = useState(null);
+
+            // Verileri localStorage'a kaydet
+            useEffect(() => {
+                setStoredData('hotel_users', users);
+            }, [users]);
+
+            useEffect(() => {
+                setStoredData('hotel_feedbacks', feedbacks);
+            }, [feedbacks]);
+
+            // Login formu
+            const LoginForm = () => {
+                const [username, setUsername] = useState('');
+                const [password, setPassword] = useState('');
+                const [error, setError] = useState('');
+
+                const handleLogin = (e) => {
+                    e.preventDefault();
+                    const user = users.find(u => u.username === username && u.password === password);
+                    if (user) {
+                        setCurrentUser(user);
+                        setError('');
+                    } else {
+                        setError('Kullanıcı adı veya şifre hatalı!');
+                    }
+                };
+
+                return (
+                    <div className="login-container">
+                        <div className="login-box">
+                            <div className="login-header">
+                                <div className="hotel-icon">🏨</div>
+                                <h1>Otel Geri Bildirim Sistemi</h1>
+                                <p>Misafir İlişkileri Yönetim Paneli</p>
+                            </div>
+                            <form onSubmit={handleLogin} className="login-form">
+                                {error && <div className="error-message">{error}</div>}
+                                <div className="form-group">
+                                    <label>Kullanıcı Adı</label>
+                                    <input
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        placeholder="Kullanıcı adınızı girin"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Şifre</label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Şifrenizi girin"
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="login-button">
+                                    Giriş Yap
+                                </button>
+                            </form>
+                            <div className="login-footer">
+                                <p>Demo Hesaplar:</p>
+                                <p><strong>Admin:</strong> admin / admin123</p>
+                                <p><strong>Kullanıcı:</strong> kullanici / kullanici123</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Filtrelenmiş geri bildirimler
+            const getFilteredFeedbacks = () => {
+                return feedbacks.filter(fb => {
+                    if (filters.department !== 'all' && fb.department !== filters.department) return false;
+                    if (filters.type !== 'all' && fb.type !== filters.type) return false;
+                    if (filters.status !== 'all' && fb.status !== filters.status) return false;
+                    if (filters.dateFrom && fb.date < filters.dateFrom) return false;
+                    if (filters.dateTo && fb.date > filters.dateTo) return false;
+                    return true;
+                });
+            };
+
+            // İstatistik hesaplamaları
+            const getStats = () => {
+                const filtered = getFilteredFeedbacks();
+                const total = filtered.length;
+                const complaints = filtered.filter(f => f.type === 'complaint').length;
+                const positive = filtered.filter(f => f.type === 'positive').length;
+                const open = filtered.filter(f => f.status === 'open').length;
+                const closed = filtered.filter(f => f.status === 'closed').length;
+
+                const departmentStats = DEPARTMENTS.map(dept => ({
+                    name: dept,
+                    complaints: filtered.filter(f => f.department === dept && f.type === 'complaint').length,
+                    positive: filtered.filter(f => f.department === dept && f.type === 'positive').length
+                }));
+
+                return { total, complaints, positive, open, closed, departmentStats };
+            };
+
+            const stats = getStats();
+
+            // Dashboard görünümü
+            const DashboardView = () => {
+                const pieData = [
+                    { name: 'Şikayet', value: stats.complaints, color: '#ef4444' },
+                    { name: 'Olumlu', value: stats.positive, color: '#22c55e' }
+                ];
+
+                return (
+                    <div className="dashboard-container">
+                        <div className="stats-grid">
+                            <div className="stat-card total">
+                                <div className="stat-icon">📊</div>
+                                <div className="stat-content">
+                                    <h3>Toplam Kayıt</h3>
+                                    <p className="stat-number">{stats.total}</p>
+                                </div>
+                            </div>
+                            <div className="stat-card complaints">
+                                <div className="stat-icon">⚠️</div>
+                                <div className="stat-content">
+                                    <h3>Şikayetler</h3>
+                                    <p className="stat-number">{stats.complaints}</p>
+                                </div>
+                            </div>
+                            <div className="stat-card positive">
+                                <div className="stat-icon">✨</div>
+                                <div className="stat-content">
+                                    <h3>Olumlu Dönüşler</h3>
+                                    <p className="stat-number">{stats.positive}</p>
+                                </div>
+                            </div>
+                            <div className="stat-card open">
+                                <div className="stat-icon">🔓</div>
+                                <div className="stat-content">
+                                    <h3>Açık Kayıtlar</h3>
+                                    <p className="stat-number">{stats.open}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="charts-grid">
+                            <div className="chart-card">
+                                <h3>Departman Bazlı Analiz</h3>
+                                <div className="chart-container">
+                                    <ChartComponent type="bar" data={stats.departmentStats} chartId="barChart" />
+                                </div>
+                            </div>
+
+                            <div className="chart-card">
+                                <h3>Genel Dağılım</h3>
+                                <div className="chart-container">
+                                    <ChartComponent type="pie" data={pieData} chartId="pieChart" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="recent-feedbacks">
+                            <h3>Son Geri Bildirimler</h3>
+                            <div className="feedback-list-mini">
+                                {getFilteredFeedbacks().slice(0, 5).map(fb => (
+                                    <div key={fb.id} className={`feedback-item-mini ${fb.type}`}>
+                                        <div className="feedback-header-mini">
+                                            <span className={`badge ${fb.type}`}>
+                                                {fb.type === 'complaint' ? '⚠️ Şikayet' : '✨ Olumlu'}
+                                            </span>
+                                            <span className="department-badge">{fb.department}</span>
+                                        </div>
+                                        <h4>{fb.title}</h4>
+                                        <p>{fb.description}</p>
+                                        <div className="feedback-meta">
+                                            <span>👤 {fb.guestName} - Oda {fb.roomNumber}</span>
+                                            <span>📅 {fb.date}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Geri bildirim listesi görünümü
+            const FeedbackListView = () => {
+                const filtered = getFilteredFeedbacks();
+
+                return (
+                    <div className="feedback-list-view">
+                        <div className="view-header">
+                            <h2>Geri Bildirim Kayıtları</h2>
+                            {currentUser.role === 'admin' && (
+                                <button className="btn-primary" onClick={() => {
+                                    setModalType('feedback');
+                                    setEditingItem(null);
+                                    setShowModal(true);
+                                }}>
+                                    ➕ Yeni Kayıt
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="feedback-list">
+                            {filtered.map(fb => (
+                                <div key={fb.id} className={`feedback-card ${fb.type}`}>
+                                    <div className="feedback-card-header">
+                                        <div>
+                                            <span className={`badge ${fb.type}`}>
+                                                {fb.type === 'complaint' ? '⚠️ Şikayet' : '✨ Olumlu'}
+                                            </span>
+                                            <span className={`badge status-${fb.status}`}>
+                                                {fb.status === 'open' ? '🔓 Açık' : '✅ Kapalı'}
+                                            </span>
+                                            <span className="department-badge">{fb.department}</span>
+                                        </div>
+                                        {currentUser.role === 'admin' && (
+                                            <div className="card-actions">
+                                                <button className="icon-btn" onClick={() => {
+                                                    setEditingItem(fb);
+                                                    setModalType('feedback');
+                                                    setShowModal(true);
+                                                }}>
+                                                    ✏️
+                                                </button>
+                                                <button className="icon-btn danger" onClick={() => {
+                                                    if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
+                                                        setFeedbacks(feedbacks.filter(f => f.id !== fb.id));
+                                                    }
+                                                }}>
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h3>{fb.title}</h3>
+                                    <p className="feedback-description">{fb.description}</p>
+                                    <div className="feedback-details">
+                                        <div className="detail-item">
+                                            <span className="detail-label">Misafir:</span>
+                                            <span>{fb.guestName}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <span className="detail-label">Oda No:</span>
+                                            <span>{fb.roomNumber}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <span className="detail-label">Tarih:</span>
+                                            <span>{fb.date}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <span className="detail-label">Kaydeden:</span>
+                                            <span>{fb.createdBy}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Kullanıcı yönetimi görünümü (sadece admin)
+            const UserManagementView = () => {
+                return (
+                    <div className="user-management-view">
+                        <div className="view-header">
+                            <h2>Kullanıcı Yönetimi</h2>
+                            <button className="btn-primary" onClick={() => {
+                                setModalType('user');
+                                setEditingItem(null);
+                                setShowModal(true);
+                            }}>
+                                ➕ Yeni Kullanıcı
+                            </button>
+                        </div>
+
+                        <div className="user-list">
+                            {users.map(user => (
+                                <div key={user.id} className="user-card">
+                                    <div className="user-avatar">
+                                        👤
+                                    </div>
+                                    <div className="user-info">
+                                        <h3>{user.name}</h3>
+                                        <p>@{user.username}</p>
+                                        <span className={`badge ${user.role}`}>
+                                            {user.role === 'admin' ? '👑 Yönetici' : '👤 Kullanıcı'}
+                                        </span>
+                                    </div>
+                                    <div className="user-actions">
+                                        <button className="icon-btn" onClick={() => {
+                                            setEditingItem(user);
+                                            setModalType('user');
+                                            setShowModal(true);
+                                        }}>
+                                            ✏️
+                                        </button>
+                                        {user.id !== currentUser.id && (
+                                            <button className="icon-btn danger" onClick={() => {
+                                                if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
+                                                    setUsers(users.filter(u => u.id !== user.id));
+                                                }
+                                            }}>
+                                                🗑️
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Modal component
+            const Modal = () => {
+                const [formData, setFormData] = useState(editingItem || (
+                    modalType === 'feedback' ? {
+                        type: 'complaint',
+                        department: 'Yemek ve İçecek',
+                        title: '',
+                        description: '',
+                        guestName: '',
+                        roomNumber: '',
+                        date: new Date().toISOString().split('T')[0],
+                        status: 'open'
+                    } : {
+                        username: '',
+                        password: '',
+                        name: '',
+                        role: 'user'
+                    }
+                ));
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    if (modalType === 'feedback') {
+                        if (editingItem) {
+                            setFeedbacks(feedbacks.map(f => f.id === editingItem.id ? { ...formData, id: f.id } : f));
+                        } else {
+                            setFeedbacks([...feedbacks, {
+                                ...formData,
+                                id: Date.now(),
+                                createdBy: currentUser.username
+                            }]);
+                        }
+                    } else if (modalType === 'user') {
+                        if (editingItem) {
+                            setUsers(users.map(u => u.id === editingItem.id ? { ...formData, id: u.id } : u));
+                        } else {
+                            setUsers([...users, { ...formData, id: Date.now() }]);
+                        }
+                    }
+                    setShowModal(false);
+                    setEditingItem(null);
+                };
+
+                return (
+                    <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>{editingItem ? 'Düzenle' : 'Yeni Ekle'} - {modalType === 'feedback' ? 'Geri Bildirim' : 'Kullanıcı'}</h2>
+                                <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+                            </div>
+                            <form onSubmit={handleSubmit} className="modal-form">
+                                {modalType === 'feedback' ? (
+                                    <>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Tip</label>
+                                                <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
+                                                    <option value="complaint">Şikayet</option>
+                                                    <option value="positive">Olumlu Dönüş</option>
+                                                </select>
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Departman</label>
+                                                <select value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})}>
+                                                    {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Başlık</label>
+                                            <input
+                                                type="text"
+                                                value={formData.title}
+                                                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Açıklama</label>
+                                            <textarea
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                                rows={4}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Misafir Adı</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.guestName}
+                                                    onChange={(e) => setFormData({...formData, guestName: e.target.value})}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Oda Numarası</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.roomNumber}
+                                                    onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Tarih</label>
+                                                <input
+                                                    type="date"
+                                                    value={formData.date}
+                                                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Durum</label>
+                                                <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
+                                                    <option value="open">Açık</option>
+                                                    <option value="closed">Kapalı</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="form-group">
+                                            <label>Ad Soyad</label>
+                                            <input
+                                                type="text"
+                                                value={formData.name || ''}
+                                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Kullanıcı Adı</label>
+                                            <input
+                                                type="text"
+                                                value={formData.username || ''}
+                                                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Şifre</label>
+                                            <input
+                                                type="password"
+                                                value={formData.password || ''}
+                                                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                                required={!editingItem}
+                                                placeholder={editingItem ? 'Değiştirmek için yeni şifre girin' : ''}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Rol</label>
+                                            <select value={formData.role || 'user'} onChange={(e) => setFormData({...formData, role: e.target.value})}>
+                                                <option value="user">Kullanıcı</option>
+                                                <option value="admin">Yönetici</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+                                <div className="modal-actions">
+                                    <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
+                                        İptal
+                                    </button>
+                                    <button type="submit" className="btn-primary">
+                                        {editingItem ? 'Güncelle' : 'Ekle'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Ana uygulama
+            if (!currentUser) {
+                return <LoginForm />;
+            }
+
+            return (
+                <>
+                    <div className="app-container">
+                        {/* Sidebar */}
+                        <aside className="sidebar">
+                            <div className="sidebar-header">
+                                <div className="logo">
+                                    <div className="hotel-icon">🏨</div>
+                                    <div>
+                                        <h1>Otel Yönetim</h1>
+                                        <p>Misafir Geri Bildirim</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <nav className="sidebar-nav">
+                                <button
+                                    className={currentView === 'dashboard' ? 'active' : ''}
+                                    onClick={() => setCurrentView('dashboard')}
+                                >
+                                    📊 Dashboard
+                                </button>
+                                <button
+                                    className={currentView === 'feedbacks' ? 'active' : ''}
+                                    onClick={() => setCurrentView('feedbacks')}
+                                >
+                                    📝 Geri Bildirimler
+                                </button>
+                                {currentUser.role === 'admin' && (
+                                    <button
+                                        className={currentView === 'users' ? 'active' : ''}
+                                        onClick={() => setCurrentView('users')}
+                                    >
+                                        👥 Kullanıcı Yönetimi
+                                    </button>
+                                )}
+                            </nav>
+
+                            <div className="sidebar-footer">
+                                <div className="user-profile">
+                                    <div className="user-avatar-small">
+                                        👤
+                                    </div>
+                                    <div className="user-info-small">
+                                        <p className="user-name">{currentUser.name}</p>
+                                        <p className="user-role">{currentUser.role === 'admin' ? 'Yönetici' : 'Kullanıcı'}</p>
+                                    </div>
+                                </div>
+                                <button className="logout-btn" onClick={() => setCurrentUser(null)}>
+                                    🚪 Çıkış
+                                </button>
+                            </div>
+                        </aside>
+
+                        {/* Main Content */}
+                        <main className="main-content">
+                            {/* Filters */}
+                            <div className="filters-bar">
+                                <div className="filter-group">
+                                    <label>Departman</label>
+                                    <select value={filters.department} onChange={(e) => setFilters({...filters, department: e.target.value})}>
+                                        <option value="all">Tümü</option>
+                                        {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label>Tip</label>
+                                    <select value={filters.type} onChange={(e) => setFilters({...filters, type: e.target.value})}>
+                                        <option value="all">Tümü</option>
+                                        <option value="complaint">Şikayet</option>
+                                        <option value="positive">Olumlu</option>
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label>Durum</label>
+                                    <select value={filters.status} onChange={(e) => setFilters({...filters, status: e.target.value})}>
+                                        <option value="all">Tümü</option>
+                                        <option value="open">Açık</option>
+                                        <option value="closed">Kapalı</option>
+                                    </select>
+                                </div>
+                                <div className="filter-group">
+                                    <label>Başlangıç</label>
+                                    <input
+                                        type="date"
+                                        value={filters.dateFrom}
+                                        onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+                                    />
+                                </div>
+                                <div className="filter-group">
+                                    <label>Bitiş</label>
+                                    <input
+                                        type="date"
+                                        value={filters.dateTo}
+                                        onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+                                    />
+                                </div>
+                                <button className="btn-secondary" onClick={() => setFilters({
+                                    department: 'all',
+                                    type: 'all',
+                                    dateFrom: '',
+                                    dateTo: '',
+                                    status: 'all'
+                                })}>
+                                    Filtreleri Temizle
+                                </button>
+                            </div>
+
+                            {/* Content Views */}
+                            {currentView === 'dashboard' && <DashboardView />}
+                            {currentView === 'feedbacks' && <FeedbackListView />}
+                            {currentView === 'users' && currentUser.role === 'admin' && <UserManagementView />}
+                        </main>
+                    </div>
+
+                    {/* Modal */}
+                    {showModal && <Modal />}
+                </>
+            );
+        }
+
+        // Uygulamayı başlat
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<HotelFeedbackSystem />);
+    </script>
+</body>
+</html>
