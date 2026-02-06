@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -151,6 +152,15 @@
             border-left: 4px solid #ef4444;
         }
 
+        .success-message {
+            background: #dcfce7;
+            color: #166534;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            border-left: 4px solid #22c55e;
+        }
+
         .login-button {
             padding: 16px;
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
@@ -169,6 +179,12 @@
             box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
         }
 
+        .login-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .login-footer {
             margin-top: 32px;
             padding-top: 24px;
@@ -184,6 +200,20 @@
 
         .login-footer strong {
             color: #334155;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* App Container */
@@ -768,6 +798,12 @@
             box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
         }
 
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: #f1f5f9;
             color: #334155;
@@ -858,6 +894,35 @@
             margin-top: 8px;
         }
 
+        .config-notice {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .config-notice h3 {
+            color: #92400e;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .config-notice p {
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .config-notice code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .sidebar {
@@ -903,6 +968,13 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        // ⚠️ SUPABASE AYARLARI - BU BİLGİLERİ DOLDURUN ⚠️
+        const SUPABASE_URL = 'https://eecjimwhcenxyrtepuph.supabase.co';  // Örnek: 'https://xxxxx.supabase.co'
+        const SUPABASE_ANON_KEY = 'sb_publishable_QkcXyqc8-3c4OHojQlhoww_usif4qYh';  // Uzun API key
+
+        // Supabase client oluştur
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // Departman listesi
         const DEPARTMENTS = [
             'Yemek ve İçecek',
@@ -915,81 +987,6 @@
             'Diğer'
         ];
 
-        // LocalStorage'dan veri okuma/yazma
-        const getStoredData = (key, defaultValue) => {
-            try {
-                const item = localStorage.getItem(key);
-                return item ? JSON.parse(item) : defaultValue;
-            } catch {
-                return defaultValue;
-            }
-        };
-
-        const setStoredData = (key, value) => {
-            try {
-                localStorage.setItem(key, JSON.stringify(value));
-            } catch (e) {
-                console.error('LocalStorage hatası:', e);
-            }
-        };
-
-        // Varsayılan veriler
-        const DEFAULT_USERS = [
-            { id: 1, username: 'admin', password: 'admin123', role: 'admin', name: 'Yönetici' },
-            { id: 2, username: 'kullanici', password: 'kullanici123', role: 'user', name: 'Personel' }
-        ];
-
-        const DEFAULT_FEEDBACKS = [
-            {
-                id: 1,
-                type: 'complaint',
-                department: 'Yemek ve İçecek',
-                title: 'Kahvaltı geç servis edildi',
-                description: 'Misafir kahvaltının 30 dakika gecikmeli geldiğini belirtti',
-                guestName: 'Ahmet Yılmaz',
-                roomNumber: '305',
-                date: '2026-02-01',
-                createdBy: 'admin',
-                status: 'open'
-            },
-            {
-                id: 2,
-                type: 'positive',
-                department: 'Temizlik',
-                title: 'Oda temizliği mükemmeldi',
-                description: 'Misafir oda temizliği hizmetinden çok memnun kaldığını belirtti',
-                guestName: 'Ayşe Demir',
-                roomNumber: '512',
-                date: '2026-02-02',
-                createdBy: 'admin',
-                status: 'closed'
-            },
-            {
-                id: 3,
-                type: 'complaint',
-                department: 'Ön Büro',
-                title: 'Check-in işlemi uzun sürdü',
-                description: 'Resepsiyonda 20 dakika bekletildiğini söyledi',
-                guestName: 'Mehmet Kaya',
-                roomNumber: '208',
-                date: '2026-02-03',
-                createdBy: 'admin',
-                status: 'open'
-            },
-            {
-                id: 4,
-                type: 'positive',
-                department: 'Animasyon ve Eğlence',
-                title: 'Çocuk animasyonu harika',
-                description: 'Çocukların animasyon ekibinden çok keyif aldığını belirtti',
-                guestName: 'Zeynep Arslan',
-                roomNumber: '425',
-                date: '2026-02-04',
-                createdBy: 'kullanici',
-                status: 'closed'
-            }
-        ];
-
         // Chart Component
         function ChartComponent({ type, data, chartId }) {
             const chartRef = useRef(null);
@@ -998,7 +995,6 @@
             useEffect(() => {
                 if (!chartRef.current) return;
 
-                // Eski grafiği temizle
                 if (chartInstanceRef.current) {
                     chartInstanceRef.current.destroy();
                 }
@@ -1076,8 +1072,8 @@
         // Ana Uygulama Komponenti
         function HotelFeedbackSystem() {
             const [currentUser, setCurrentUser] = useState(null);
-            const [users, setUsers] = useState(() => getStoredData('hotel_users', DEFAULT_USERS));
-            const [feedbacks, setFeedbacks] = useState(() => getStoredData('hotel_feedbacks', DEFAULT_FEEDBACKS));
+            const [users, setUsers] = useState([]);
+            const [feedbacks, setFeedbacks] = useState([]);
             const [currentView, setCurrentView] = useState('dashboard');
             const [filters, setFilters] = useState({
                 department: 'all',
@@ -1089,32 +1085,101 @@
             const [showModal, setShowModal] = useState(false);
             const [modalType, setModalType] = useState('');
             const [editingItem, setEditingItem] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [configError, setConfigError] = useState(false);
 
-            // Verileri localStorage'a kaydet
+            // Supabase yapılandırması kontrol
             useEffect(() => {
-                setStoredData('hotel_users', users);
-            }, [users]);
+                if (SUPABASE_URL === 'SUPABASE_URL_BURAYA' || SUPABASE_ANON_KEY === 'SUPABASE_ANON_KEY_BURAYA') {
+                    setConfigError(true);
+                }
+            }, []);
 
+            // Verileri yükle
+            const loadData = async () => {
+                try {
+                    setLoading(true);
+                    
+                    // Kullanıcıları yükle
+                    const { data: usersData, error: usersError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .order('id', { ascending: true });
+                    
+                    if (usersError) throw usersError;
+                    setUsers(usersData || []);
+
+                    // Geri bildirimleri yükle
+                    const { data: feedbacksData, error: feedbacksError } = await supabase
+                        .from('feedbacks')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (feedbacksError) throw feedbacksError;
+                    setFeedbacks(feedbacksData || []);
+                } catch (error) {
+                    console.error('Veri yükleme hatası:', error);
+                    alert('Veriler yüklenirken hata oluştu: ' + error.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // İlk yüklemede verileri al
             useEffect(() => {
-                setStoredData('hotel_feedbacks', feedbacks);
-            }, [feedbacks]);
+                if (!configError) {
+                    loadData();
+                }
+            }, [configError]);
 
             // Login formu
             const LoginForm = () => {
                 const [username, setUsername] = useState('');
                 const [password, setPassword] = useState('');
                 const [error, setError] = useState('');
+                const [isLoading, setIsLoading] = useState(false);
 
-                const handleLogin = (e) => {
+                const handleLogin = async (e) => {
                     e.preventDefault();
-                    const user = users.find(u => u.username === username && u.password === password);
-                    if (user) {
-                        setCurrentUser(user);
-                        setError('');
-                    } else {
-                        setError('Kullanıcı adı veya şifre hatalı!');
+                    setIsLoading(true);
+                    setError('');
+
+                    try {
+                        const { data, error } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('username', username)
+                            .eq('password', password)
+                            .single();
+
+                        if (error || !data) {
+                            setError('Kullanıcı adı veya şifre hatalı!');
+                        } else {
+                            setCurrentUser(data);
+                        }
+                    } catch (err) {
+                        setError('Giriş yapılırken hata oluştu!');
+                        console.error(err);
+                    } finally {
+                        setIsLoading(false);
                     }
                 };
+
+                if (configError) {
+                    return (
+                        <div className="login-container">
+                            <div className="login-box">
+                                <div className="config-notice">
+                                    <h3>⚙️ Yapılandırma Gerekli</h3>
+                                    <p>Uygulamayı kullanmadan önce Supabase bilgilerinizi girmeniz gerekiyor:</p>
+                                    <p>1. <code>SUPABASE_URL</code> değişkenine Supabase proje URL'nizi</p>
+                                    <p>2. <code>SUPABASE_ANON_KEY</code> değişkenine API key'inizi ekleyin</p>
+                                    <p style={{marginTop: '12px', fontWeight: '600'}}>Bu bilgileri Supabase → Settings → API bölümünden alabilirsiniz.</p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
 
                 return (
                     <div className="login-container">
@@ -1134,6 +1199,7 @@
                                         onChange={(e) => setUsername(e.target.value)}
                                         placeholder="Kullanıcı adınızı girin"
                                         required
+                                        disabled={isLoading}
                                     />
                                 </div>
                                 <div className="form-group">
@@ -1144,16 +1210,17 @@
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="Şifrenizi girin"
                                         required
+                                        disabled={isLoading}
                                     />
                                 </div>
-                                <button type="submit" className="login-button">
-                                    Giriş Yap
+                                <button type="submit" className="login-button" disabled={isLoading}>
+                                    {isLoading ? <span className="loading-spinner"></span> : 'Giriş Yap'}
                                 </button>
                             </form>
                             <div className="login-footer">
-                                <p>Noxinn Deluxe Hotel:</p>
-                                <p><strong>Misafir Geri Bildirim Sistemi'ne Hoşgeldiniz</strong></p>
-                                <p><strong></strong></p>
+                                <p>Demo Hesaplar:</p>
+                                <p><strong>Admin:</strong> admin / admin123</p>
+                                <p><strong>Kullanıcı:</strong> kullanici / kullanici123</p>
                             </div>
                         </div>
                     </div>
@@ -1262,7 +1329,7 @@
                                         <h4>{fb.title}</h4>
                                         <p>{fb.description}</p>
                                         <div className="feedback-meta">
-                                            <span>👤 {fb.guestName} - Oda {fb.roomNumber}</span>
+                                            <span>👤 {fb.guest_name} - Oda {fb.room_number}</span>
                                             <span>📅 {fb.date}</span>
                                         </div>
                                     </div>
@@ -1277,10 +1344,26 @@
             const FeedbackListView = () => {
                 const filtered = getFilteredFeedbacks();
 
+                const handleDelete = async (id) => {
+                    if (!confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
+                    
+                    try {
+                        const { error } = await supabase
+                            .from('feedbacks')
+                            .delete()
+                            .eq('id', id);
+                        
+                        if (error) throw error;
+                        await loadData();
+                    } catch (error) {
+                        alert('Silme hatası: ' + error.message);
+                    }
+                };
+
                 return (
                     <div className="feedback-list-view">
                         <div className="view-header">
-                            <h2>Geri Bildirim Kayıtları</h2>
+                            <h2>Geri Bildirim Kayıtları ({filtered.length})</h2>
                             {currentUser.role === 'admin' && (
                                 <button className="btn-primary" onClick={() => {
                                     setModalType('feedback');
@@ -1314,11 +1397,7 @@
                                                 }}>
                                                     ✏️
                                                 </button>
-                                                <button className="icon-btn danger" onClick={() => {
-                                                    if (confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
-                                                        setFeedbacks(feedbacks.filter(f => f.id !== fb.id));
-                                                    }
-                                                }}>
+                                                <button className="icon-btn danger" onClick={() => handleDelete(fb.id)}>
                                                     🗑️
                                                 </button>
                                             </div>
@@ -1329,11 +1408,11 @@
                                     <div className="feedback-details">
                                         <div className="detail-item">
                                             <span className="detail-label">Misafir:</span>
-                                            <span>{fb.guestName}</span>
+                                            <span>{fb.guest_name}</span>
                                         </div>
                                         <div className="detail-item">
                                             <span className="detail-label">Oda No:</span>
-                                            <span>{fb.roomNumber}</span>
+                                            <span>{fb.room_number}</span>
                                         </div>
                                         <div className="detail-item">
                                             <span className="detail-label">Tarih:</span>
@@ -1341,7 +1420,7 @@
                                         </div>
                                         <div className="detail-item">
                                             <span className="detail-label">Kaydeden:</span>
-                                            <span>{fb.createdBy}</span>
+                                            <span>{fb.created_by}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1351,8 +1430,24 @@
                 );
             };
 
-            // Kullanıcı yönetimi görünümü (sadece admin)
+            // Kullanıcı yönetimi görünümü
             const UserManagementView = () => {
+                const handleDeleteUser = async (id) => {
+                    if (!confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return;
+                    
+                    try {
+                        const { error } = await supabase
+                            .from('users')
+                            .delete()
+                            .eq('id', id);
+                        
+                        if (error) throw error;
+                        await loadData();
+                    } catch (error) {
+                        alert('Silme hatası: ' + error.message);
+                    }
+                };
+
                 return (
                     <div className="user-management-view">
                         <div className="view-header">
@@ -1369,9 +1464,7 @@
                         <div className="user-list">
                             {users.map(user => (
                                 <div key={user.id} className="user-card">
-                                    <div className="user-avatar">
-                                        👤
-                                    </div>
+                                    <div className="user-avatar">👤</div>
                                     <div className="user-info">
                                         <h3>{user.name}</h3>
                                         <p>@{user.username}</p>
@@ -1388,11 +1481,7 @@
                                             ✏️
                                         </button>
                                         {user.id !== currentUser.id && (
-                                            <button className="icon-btn danger" onClick={() => {
-                                                if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-                                                    setUsers(users.filter(u => u.id !== user.id));
-                                                }
-                                            }}>
+                                            <button className="icon-btn danger" onClick={() => handleDeleteUser(user.id)}>
                                                 🗑️
                                             </button>
                                         )}
@@ -1412,8 +1501,8 @@
                         department: 'Yemek ve İçecek',
                         title: '',
                         description: '',
-                        guestName: '',
-                        roomNumber: '',
+                        guest_name: '',
+                        room_number: '',
                         date: new Date().toISOString().split('T')[0],
                         status: 'open'
                     } : {
@@ -1423,28 +1512,56 @@
                         role: 'user'
                     }
                 ));
+                const [saving, setSaving] = useState(false);
 
-                const handleSubmit = (e) => {
+                const handleSubmit = async (e) => {
                     e.preventDefault();
-                    if (modalType === 'feedback') {
-                        if (editingItem) {
-                            setFeedbacks(feedbacks.map(f => f.id === editingItem.id ? { ...formData, id: f.id } : f));
-                        } else {
-                            setFeedbacks([...feedbacks, {
-                                ...formData,
-                                id: Date.now(),
-                                createdBy: currentUser.username
-                            }]);
+                    setSaving(true);
+
+                    try {
+                        if (modalType === 'feedback') {
+                            if (editingItem) {
+                                const { error } = await supabase
+                                    .from('feedbacks')
+                                    .update(formData)
+                                    .eq('id', editingItem.id);
+                                if (error) throw error;
+                            } else {
+                                const { error } = await supabase
+                                    .from('feedbacks')
+                                    .insert([{
+                                        ...formData,
+                                        created_by: currentUser.username
+                                    }]);
+                                if (error) throw error;
+                            }
+                        } else if (modalType === 'user') {
+                            if (editingItem) {
+                                const updateData = { ...formData };
+                                if (!updateData.password) {
+                                    delete updateData.password;
+                                }
+                                const { error } = await supabase
+                                    .from('users')
+                                    .update(updateData)
+                                    .eq('id', editingItem.id);
+                                if (error) throw error;
+                            } else {
+                                const { error } = await supabase
+                                    .from('users')
+                                    .insert([formData]);
+                                if (error) throw error;
+                            }
                         }
-                    } else if (modalType === 'user') {
-                        if (editingItem) {
-                            setUsers(users.map(u => u.id === editingItem.id ? { ...formData, id: u.id } : u));
-                        } else {
-                            setUsers([...users, { ...formData, id: Date.now() }]);
-                        }
+                        
+                        await loadData();
+                        setShowModal(false);
+                        setEditingItem(null);
+                    } catch (error) {
+                        alert('Kaydetme hatası: ' + error.message);
+                    } finally {
+                        setSaving(false);
                     }
-                    setShowModal(false);
-                    setEditingItem(null);
                 };
 
                 return (
@@ -1495,8 +1612,8 @@
                                                 <label>Misafir Adı</label>
                                                 <input
                                                     type="text"
-                                                    value={formData.guestName}
-                                                    onChange={(e) => setFormData({...formData, guestName: e.target.value})}
+                                                    value={formData.guest_name}
+                                                    onChange={(e) => setFormData({...formData, guest_name: e.target.value})}
                                                     required
                                                 />
                                             </div>
@@ -1504,8 +1621,8 @@
                                                 <label>Oda Numarası</label>
                                                 <input
                                                     type="text"
-                                                    value={formData.roomNumber}
-                                                    onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
+                                                    value={formData.room_number}
+                                                    onChange={(e) => setFormData({...formData, room_number: e.target.value})}
                                                     required
                                                 />
                                             </div>
@@ -1569,11 +1686,11 @@
                                     </>
                                 )}
                                 <div className="modal-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
+                                    <button type="button" className="btn-secondary" onClick={() => setShowModal(false)} disabled={saving}>
                                         İptal
                                     </button>
-                                    <button type="submit" className="btn-primary">
-                                        {editingItem ? 'Güncelle' : 'Ekle'}
+                                    <button type="submit" className="btn-primary" disabled={saving}>
+                                        {saving ? <span className="loading-spinner"></span> : (editingItem ? 'Güncelle' : 'Ekle')}
                                     </button>
                                 </div>
                             </form>
@@ -1582,7 +1699,6 @@
                 );
             };
 
-            // Ana uygulama
             if (!currentUser) {
                 return <LoginForm />;
             }
@@ -1590,14 +1706,13 @@
             return (
                 <>
                     <div className="app-container">
-                        {/* Sidebar */}
                         <aside className="sidebar">
                             <div className="sidebar-header">
                                 <div className="logo">
                                     <div className="hotel-icon">🏨</div>
                                     <div>
-                                        <h1>Noxinn Deluxe</h1>
-                                        <p>GBS (Geri Bildirim Sistemi)</p>
+                                        <h1>Otel Yönetim</h1>
+                                        <p>Misafir Geri Bildirim</p>
                                     </div>
                                 </div>
                             </div>
@@ -1627,9 +1742,7 @@
 
                             <div className="sidebar-footer">
                                 <div className="user-profile">
-                                    <div className="user-avatar-small">
-                                        👤
-                                    </div>
+                                    <div className="user-avatar-small">👤</div>
                                     <div className="user-info-small">
                                         <p className="user-name">{currentUser.name}</p>
                                         <p className="user-role">{currentUser.role === 'admin' ? 'Yönetici' : 'Kullanıcı'}</p>
@@ -1641,9 +1754,7 @@
                             </div>
                         </aside>
 
-                        {/* Main Content */}
                         <main className="main-content">
-                            {/* Filters */}
                             <div className="filters-bar">
                                 <div className="filter-group">
                                     <label>Departman</label>
@@ -1695,20 +1806,17 @@
                                 </button>
                             </div>
 
-                            {/* Content Views */}
                             {currentView === 'dashboard' && <DashboardView />}
                             {currentView === 'feedbacks' && <FeedbackListView />}
                             {currentView === 'users' && currentUser.role === 'admin' && <UserManagementView />}
                         </main>
                     </div>
 
-                    {/* Modal */}
                     {showModal && <Modal />}
                 </>
             );
         }
 
-        // Uygulamayı başlat
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<HotelFeedbackSystem />);
     </script>
