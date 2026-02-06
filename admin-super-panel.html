@@ -1405,25 +1405,31 @@ async function initEmailJS() {
 async function loadEmailJSSettings() {
     console.log('🔄 loadEmailJSSettings başladı');
     try {
-        const settings = ['emailjs_service_id', 'emailjs_template_id', 'emailjs_public_key', 'emailjs_from_email', 'emailjs_from_name'];
+        // Veritabanı key -> HTML input ID mapping
+        const settingsMap = {
+            'emailjs_service_id': 'emailjsServiceId',
+            'emailjs_template_id': 'emailjsTemplateId',
+            'emailjs_public_key': 'emailjsPublicKey',
+            'emailjs_from_email': 'emailjsFromEmail',
+            'emailjs_from_name': 'emailjsFromName'
+        };
         
-        console.log('📥 Veritabanından yüklenecek ayarlar:', settings);
+        console.log('📥 Veritabanından yüklenecek ayarlar:', Object.keys(settingsMap));
         
-        for (const key of settings) {
+        for (const [dbKey, inputId] of Object.entries(settingsMap)) {
             const { data, error } = await supabase
                 .from('ai_settings')
                 .select('setting_value')
-                .eq('setting_key', key)
+                .eq('setting_key', dbKey)
                 .single();
             
-            console.log(`📊 ${key} yanıtı:`, { data, error });
+            console.log(`📊 ${dbKey} yanıtı:`, { data, error });
             
             if (error) {
-                console.log(`⚠️ ${key} bulunamadı (normal olabilir):`, error.message);
+                console.log(`⚠️ ${dbKey} bulunamadı (normal olabilir):`, error.message);
             }
             
             if (data && data.setting_value) {
-                const inputId = key.replace(/_/g, '');
                 const input = document.getElementById(inputId);
                 console.log(`🔍 Input ID: ${inputId}, Element:`, input);
                 if (input) {
