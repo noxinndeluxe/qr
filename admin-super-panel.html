@@ -1403,8 +1403,11 @@ async function initEmailJS() {
 }
 
 async function loadEmailJSSettings() {
+    console.log('🔄 loadEmailJSSettings başladı');
     try {
         const settings = ['emailjs_service_id', 'emailjs_template_id', 'emailjs_public_key', 'emailjs_from_email', 'emailjs_from_name'];
+        
+        console.log('📥 Veritabanından yüklenecek ayarlar:', settings);
         
         for (const key of settings) {
             const { data, error } = await supabase
@@ -1413,32 +1416,49 @@ async function loadEmailJSSettings() {
                 .eq('setting_key', key)
                 .single();
             
+            console.log(`📊 ${key} yanıtı:`, { data, error });
+            
+            if (error) {
+                console.log(`⚠️ ${key} bulunamadı (normal olabilir):`, error.message);
+            }
+            
             if (data && data.setting_value) {
                 const inputId = key.replace(/_/g, '');
                 const input = document.getElementById(inputId);
+                console.log(`🔍 Input ID: ${inputId}, Element:`, input);
                 if (input) {
                     input.value = data.setting_value;
+                    console.log(`✅ ${inputId} input'una değer yazıldı:`, data.setting_value);
+                } else {
+                    console.log(`❌ ${inputId} elementi bulunamadı!`);
                 }
             }
         }
         
         // Eğer tüm ayarlar yüklendiyse status göster
         const serviceId = document.getElementById('emailjsServiceId').value;
+        console.log('🔍 Yüklenen serviceId:', serviceId);
         if (serviceId) {
             document.getElementById('emailjsStatus').style.display = 'block';
-            console.log('✅ EmailJS ayarları yüklendi');
+            console.log('✅ EmailJS ayarları input\'lara yüklendi');
+        } else {
+            console.log('⚠️ ServiceId yüklenemedi, ayarlar boş olabilir');
         }
     } catch (e) {
-        console.error('EmailJS ayarları yükleme hatası:', e);
+        console.error('❌ EmailJS ayarları yükleme hatası:', e);
     }
 }
 
 window.saveEmailJSSettings = async function() {
+    console.log('🔧 saveEmailJSSettings başladı');
+    
     const serviceId = document.getElementById('emailjsServiceId').value.trim();
     const templateId = document.getElementById('emailjsTemplateId').value.trim();
     const publicKey = document.getElementById('emailjsPublicKey').value.trim();
     const fromEmail = document.getElementById('emailjsFromEmail').value.trim();
     const fromName = document.getElementById('emailjsFromName').value.trim();
+    
+    console.log('📝 Girilen değerler:', { serviceId, templateId, publicKey, fromEmail, fromName });
     
     const errEl = document.getElementById('emailjsError');
     const statusEl = document.getElementById('emailjsStatus');
@@ -1467,9 +1487,13 @@ window.saveEmailJSSettings = async function() {
             { key: 'emailjs_from_name', value: fromName }
         ];
         
+        console.log('💾 Kaydedilecek ayarlar:', settings);
+        
         // Her ayarı upsert ile kaydet
         for (const setting of settings) {
-            const { error } = await supabase
+            console.log(`📌 Kaydediliyor: ${setting.key} = ${setting.value}`);
+            
+            const { data, error } = await supabase
                 .from('ai_settings')
                 .upsert({
                     setting_key: setting.key,
@@ -1478,18 +1502,22 @@ window.saveEmailJSSettings = async function() {
                     updated_by: curUser.username
                 }, {
                     onConflict: 'setting_key'
-                });
+                })
+                .select();
+            
+            console.log(`📊 Supabase yanıtı (${setting.key}):`, { data, error });
             
             if (error) {
-                console.error(`${setting.key} kaydedilemedi:`, error);
+                console.error(`❌ ${setting.key} kaydedilemedi:`, error);
                 throw error;
             }
             
-            console.log(`✅ ${setting.key} kaydedildi:`, setting.value);
+            console.log(`✅ ${setting.key} başarıyla kaydedildi!`);
         }
         
         // EmailJS'i initialize et
         emailjs.init(publicKey);
+        console.log('✅ EmailJS initialized:', publicKey);
         
         statusEl.style.display = 'block';
         statusEl.textContent = '✅ EmailJS ayarları kaydedildi ve veritabanına yazıldı!';
@@ -1499,7 +1527,8 @@ window.saveEmailJSSettings = async function() {
         setTimeout(() => statusEl.style.display = 'none', 5000);
         
     } catch (e) {
-        console.error('EmailJS ayarları kaydetme hatası:', e);
+        console.error('❌ EmailJS ayarları kaydetme hatası:', e);
+        console.error('❌ Hata detayı:', e.message, e.hint, e.details);
         errEl.textContent = '⚠️ Ayarlar kaydedilemedi: ' + e.message;
         errEl.classList.add('show');
     }
