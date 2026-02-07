@@ -4,7 +4,1203 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Otel Yönetim Paneli Pro</title>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">// ============================================
+// OTEL YÖNETİM PANELİ V2.0 - YENİ ÖZELLİKLER
+// ============================================
+
+// Global değişkenler
+let successThreshold = 80; // Başarı barajı
+let emailTemplate = ''; // Mail taslağı
+let selectedSurveyIds = new Set(); // Seçili anketler
+
+// ============================================
+// 1. KULLANICI YETKİ YÖNETİMİ
+// ============================================
+
+window.changeUserRole = async function(userId, currentRole) {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const user = allUsers.find(u => u.id === userId);
+    
+    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('users')
+            .update({ role: newRole })
+            .eq('id', userId);
+        
+        if (error) throw error;
+        
+        // Local state'i güncelle
+        user.role = newRole;
+        renderUsers();
+        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        
+    } catch (e) {
+        console.error('Rol değiştirme hatası:', e);
+        alert('❌ Rol değiştirilemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 2. PDF EXPORT FONKSİYONLARI
+// ============================================
+
+window.exportGeneralReportPDF = async function() {
+    const element = document.getElementById('generalReportContainer');
+    if (!element) {
+        alert('⚠️ Önce rapor oluşturun!');
+        return;
+    }
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+window.exportDepartmentReportPDF = async function() {
+    const element = document.getElementById('deptReportContainer');
+    if (!element || !element.innerHTML) {
+        alert('⚠️ Önce departman raporu oluşturun!');
+        return;
+    }
+    
+    const deptKey = document.getElementById('deptSelect').value;
+    const dept = DEPTS.find(d => d.key === deptKey);
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+        
+        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+// ============================================
+// 3. BAŞARI BARAJI YÖNETİMİ
+// ============================================
+
+async function loadSuccessThreshold() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'success_threshold')
+            .single();
+        
+        if (data && data.setting_value) {
+            successThreshold = parseInt(data.setting_value);
+            const input = document.getElementById('successThresholdInput');
+            if (input) input.value = successThreshold;
+            console.log('✅ Başarı barajı yüklendi:', successThreshold);
+        }
+    } catch (e) {
+        console.log('Başarı barajı ayarı yok, varsayılan kullanılıyor:', successThreshold);
+    }
+}
+
+window.saveSuccessThreshold = async function() {
+    const value = parseInt(document.getElementById('successThresholdInput').value);
+    const errEl = document.getElementById('thresholdError');
+    const statusEl = document.getElementById('thresholdStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (isNaN(value) || value < 50 || value > 100) {
+        errEl.textContent = '⚠️ Başarı barajı 50-100 arasında olmalı!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'success_threshold',
+                setting_value: value.toString(),
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        successThreshold = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+        // Raporları yenile
+        if (document.getElementById('reports').classList.contains('active')) {
+            generateReport();
+        }
+        
+    } catch (e) {
+        console.error('Başarı barajı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+// ============================================
+// 4. MAİL SİLME FONKSİYONLARI
+// ============================================
+
+window.toggleSurveySelect = function(surveyId, checkbox) {
+    if (checkbox.checked) {
+        selectedSurveyIds.add(surveyId);
+    } else {
+        selectedSurveyIds.delete(surveyId);
+    }
+    
+    // Toplu silme butonunu göster/gizle
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.toggleSelectAll = function(checkbox) {
+    const checkboxes = document.querySelectorAll('.email-checkbox');
+    selectedSurveyIds.clear();
+    
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (checkbox.checked) {
+            selectedSurveyIds.add(cb.dataset.surveyId);
+        }
+    });
+    
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.deleteSurvey = async function(surveyId, email) {
+    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .eq('id', surveyId);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => s.id !== surveyId);
+        selectedSurveyIds.delete(surveyId);
+        
+        renderEmails();
+        updateDashboard();
+        alert('✅ Anket silindi!');
+        
+    } catch (e) {
+        console.error('Anket silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+window.deleteSelectedSurveys = async function() {
+    if (selectedSurveyIds.size === 0) return;
+    
+    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const idsArray = Array.from(selectedSurveyIds);
+        
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .in('id', idsArray);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => !selectedSurveyIds.has(s.id));
+        selectedSurveyIds.clear();
+        
+        renderEmails();
+        updateDashboard();
+        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        
+    } catch (e) {
+        console.error('Toplu silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 5. MAİL TASLAĞI YÖNETİMİ
+// ============================================
+
+async function loadEmailTemplate() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'email_template')
+            .single();
+        
+        if (data && data.setting_value) {
+            emailTemplate = data.setting_value;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+            console.log('✅ Mail taslağı yüklendi');
+        } else {
+            // Varsayılan taslak
+            emailTemplate = \`Merhaba,
+
+{{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
+
+Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
+
+Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
+
+Zamanınız için teşekkürler!
+
+Sevgilerle,
+{{hotel_name}}\`;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+        }
+    } catch (e) {
+        console.log('Mail taslağı yükleme hatası:', e);
+    }
+}
+
+window.saveEmailTemplate = async function() {
+    const value = document.getElementById('emailTemplateTextarea').value.trim();
+    const errEl = document.getElementById('templateError');
+    const statusEl = document.getElementById('templateStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (!value) {
+        errEl.textContent = '⚠️ Mail taslağı boş olamaz!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'email_template',
+                setting_value: value,
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        emailTemplate = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = '✅ Mail taslağı kaydedildi!';
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+    } catch (e) {
+        console.error('Mail taslağı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+window.previewEmailTemplate = function() {
+    const template = document.getElementById('emailTemplateTextarea').value;
+    const hotelName = document.getElementById('emailjsFromName').value || 'Noxinn Deluxe Hotel';
+    
+    const preview = template
+        .replace(/{{hotel_name}}/g, hotelName)
+        .replace(/{{room_number}}/g, '101')
+        .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
+    
+    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+}
+
+// ============================================
+// SAYFA YÜKLENME OLAYLARI
+// ============================================
+
+// Ayarlar sayfası açıldığında tüm ayarları yükle
+const originalNavFunction = window.nav;
+window.nav = function(el, pageId) {
+    originalNavFunction(el, pageId);
+    
+    if (pageId === 'settings') {
+        loadSuccessThreshold();
+        loadEmailTemplate();
+    }
+}
+
+// İlk yüklemede ayarları yükle
+window.addEventListener('DOMContentLoaded', () => {
+    loadSuccessThreshold();
+    loadEmailTemplate();
+});
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">// ============================================
+// OTEL YÖNETİM PANELİ V2.0 - YENİ ÖZELLİKLER
+// ============================================
+
+// Global değişkenler
+let successThreshold = 80; // Başarı barajı
+let emailTemplate = ''; // Mail taslağı
+let selectedSurveyIds = new Set(); // Seçili anketler
+
+// ============================================
+// 1. KULLANICI YETKİ YÖNETİMİ
+// ============================================
+
+window.changeUserRole = async function(userId, currentRole) {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const user = allUsers.find(u => u.id === userId);
+    
+    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('users')
+            .update({ role: newRole })
+            .eq('id', userId);
+        
+        if (error) throw error;
+        
+        // Local state'i güncelle
+        user.role = newRole;
+        renderUsers();
+        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        
+    } catch (e) {
+        console.error('Rol değiştirme hatası:', e);
+        alert('❌ Rol değiştirilemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 2. PDF EXPORT FONKSİYONLARI
+// ============================================
+
+window.exportGeneralReportPDF = async function() {
+    const element = document.getElementById('generalReportContainer');
+    if (!element) {
+        alert('⚠️ Önce rapor oluşturun!');
+        return;
+    }
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+window.exportDepartmentReportPDF = async function() {
+    const element = document.getElementById('deptReportContainer');
+    if (!element || !element.innerHTML) {
+        alert('⚠️ Önce departman raporu oluşturun!');
+        return;
+    }
+    
+    const deptKey = document.getElementById('deptSelect').value;
+    const dept = DEPTS.find(d => d.key === deptKey);
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+        
+        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+// ============================================
+// 3. BAŞARI BARAJI YÖNETİMİ
+// ============================================
+
+async function loadSuccessThreshold() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'success_threshold')
+            .single();
+        
+        if (data && data.setting_value) {
+            successThreshold = parseInt(data.setting_value);
+            const input = document.getElementById('successThresholdInput');
+            if (input) input.value = successThreshold;
+            console.log('✅ Başarı barajı yüklendi:', successThreshold);
+        }
+    } catch (e) {
+        console.log('Başarı barajı ayarı yok, varsayılan kullanılıyor:', successThreshold);
+    }
+}
+
+window.saveSuccessThreshold = async function() {
+    const value = parseInt(document.getElementById('successThresholdInput').value);
+    const errEl = document.getElementById('thresholdError');
+    const statusEl = document.getElementById('thresholdStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (isNaN(value) || value < 50 || value > 100) {
+        errEl.textContent = '⚠️ Başarı barajı 50-100 arasında olmalı!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'success_threshold',
+                setting_value: value.toString(),
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        successThreshold = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+        // Raporları yenile
+        if (document.getElementById('reports').classList.contains('active')) {
+            generateReport();
+        }
+        
+    } catch (e) {
+        console.error('Başarı barajı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+// ============================================
+// 4. MAİL SİLME FONKSİYONLARI
+// ============================================
+
+window.toggleSurveySelect = function(surveyId, checkbox) {
+    if (checkbox.checked) {
+        selectedSurveyIds.add(surveyId);
+    } else {
+        selectedSurveyIds.delete(surveyId);
+    }
+    
+    // Toplu silme butonunu göster/gizle
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.toggleSelectAll = function(checkbox) {
+    const checkboxes = document.querySelectorAll('.email-checkbox');
+    selectedSurveyIds.clear();
+    
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (checkbox.checked) {
+            selectedSurveyIds.add(cb.dataset.surveyId);
+        }
+    });
+    
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.deleteSurvey = async function(surveyId, email) {
+    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .eq('id', surveyId);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => s.id !== surveyId);
+        selectedSurveyIds.delete(surveyId);
+        
+        renderEmails();
+        updateDashboard();
+        alert('✅ Anket silindi!');
+        
+    } catch (e) {
+        console.error('Anket silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+window.deleteSelectedSurveys = async function() {
+    if (selectedSurveyIds.size === 0) return;
+    
+    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const idsArray = Array.from(selectedSurveyIds);
+        
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .in('id', idsArray);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => !selectedSurveyIds.has(s.id));
+        selectedSurveyIds.clear();
+        
+        renderEmails();
+        updateDashboard();
+        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        
+    } catch (e) {
+        console.error('Toplu silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 5. MAİL TASLAĞI YÖNETİMİ
+// ============================================
+
+async function loadEmailTemplate() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'email_template')
+            .single();
+        
+        if (data && data.setting_value) {
+            emailTemplate = data.setting_value;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+            console.log('✅ Mail taslağı yüklendi');
+        } else {
+            // Varsayılan taslak
+            emailTemplate = \`Merhaba,
+
+{{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
+
+Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
+
+Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
+
+Zamanınız için teşekkürler!
+
+Sevgilerle,
+{{hotel_name}}\`;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+        }
+    } catch (e) {
+        console.log('Mail taslağı yükleme hatası:', e);
+    }
+}
+
+window.saveEmailTemplate = async function() {
+    const value = document.getElementById('emailTemplateTextarea').value.trim();
+    const errEl = document.getElementById('templateError');
+    const statusEl = document.getElementById('templateStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (!value) {
+        errEl.textContent = '⚠️ Mail taslağı boş olamaz!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'email_template',
+                setting_value: value,
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        emailTemplate = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = '✅ Mail taslağı kaydedildi!';
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+    } catch (e) {
+        console.error('Mail taslağı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+window.previewEmailTemplate = function() {
+    const template = document.getElementById('emailTemplateTextarea').value;
+    const hotelName = document.getElementById('emailjsFromName').value || 'Noxinn Deluxe Hotel';
+    
+    const preview = template
+        .replace(/{{hotel_name}}/g, hotelName)
+        .replace(/{{room_number}}/g, '101')
+        .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
+    
+    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+}
+
+// ============================================
+// SAYFA YÜKLENME OLAYLARI
+// ============================================
+
+// Ayarlar sayfası açıldığında tüm ayarları yükle
+const originalNavFunction = window.nav;
+window.nav = function(el, pageId) {
+    originalNavFunction(el, pageId);
+    
+    if (pageId === 'settings') {
+        loadSuccessThreshold();
+        loadEmailTemplate();
+    }
+}
+
+// İlk yüklemede ayarları yükle
+window.addEventListener('DOMContentLoaded', () => {
+    loadSuccessThreshold();
+    loadEmailTemplate();
+});
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">// ============================================
+// OTEL YÖNETİM PANELİ V2.0 - YENİ ÖZELLİKLER
+// ============================================
+
+// Global değişkenler
+let successThreshold = 80; // Başarı barajı
+let emailTemplate = ''; // Mail taslağı
+let selectedSurveyIds = new Set(); // Seçili anketler
+
+// ============================================
+// 1. KULLANICI YETKİ YÖNETİMİ
+// ============================================
+
+window.changeUserRole = async function(userId, currentRole) {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const user = allUsers.find(u => u.id === userId);
+    
+    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('users')
+            .update({ role: newRole })
+            .eq('id', userId);
+        
+        if (error) throw error;
+        
+        // Local state'i güncelle
+        user.role = newRole;
+        renderUsers();
+        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        
+    } catch (e) {
+        console.error('Rol değiştirme hatası:', e);
+        alert('❌ Rol değiştirilemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 2. PDF EXPORT FONKSİYONLARI
+// ============================================
+
+window.exportGeneralReportPDF = async function() {
+    const element = document.getElementById('generalReportContainer');
+    if (!element) {
+        alert('⚠️ Önce rapor oluşturun!');
+        return;
+    }
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+window.exportDepartmentReportPDF = async function() {
+    const element = document.getElementById('deptReportContainer');
+    if (!element || !element.innerHTML) {
+        alert('⚠️ Önce departman raporu oluşturun!');
+        return;
+    }
+    
+    const deptKey = document.getElementById('deptSelect').value;
+    const dept = DEPTS.find(d => d.key === deptKey);
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+        
+        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+// ============================================
+// 3. BAŞARI BARAJI YÖNETİMİ
+// ============================================
+
+async function loadSuccessThreshold() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'success_threshold')
+            .single();
+        
+        if (data && data.setting_value) {
+            successThreshold = parseInt(data.setting_value);
+            const input = document.getElementById('successThresholdInput');
+            if (input) input.value = successThreshold;
+            console.log('✅ Başarı barajı yüklendi:', successThreshold);
+        }
+    } catch (e) {
+        console.log('Başarı barajı ayarı yok, varsayılan kullanılıyor:', successThreshold);
+    }
+}
+
+window.saveSuccessThreshold = async function() {
+    const value = parseInt(document.getElementById('successThresholdInput').value);
+    const errEl = document.getElementById('thresholdError');
+    const statusEl = document.getElementById('thresholdStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (isNaN(value) || value < 50 || value > 100) {
+        errEl.textContent = '⚠️ Başarı barajı 50-100 arasında olmalı!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'success_threshold',
+                setting_value: value.toString(),
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        successThreshold = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+        // Raporları yenile
+        if (document.getElementById('reports').classList.contains('active')) {
+            generateReport();
+        }
+        
+    } catch (e) {
+        console.error('Başarı barajı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+// ============================================
+// 4. MAİL SİLME FONKSİYONLARI
+// ============================================
+
+window.toggleSurveySelect = function(surveyId, checkbox) {
+    if (checkbox.checked) {
+        selectedSurveyIds.add(surveyId);
+    } else {
+        selectedSurveyIds.delete(surveyId);
+    }
+    
+    // Toplu silme butonunu göster/gizle
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.toggleSelectAll = function(checkbox) {
+    const checkboxes = document.querySelectorAll('.email-checkbox');
+    selectedSurveyIds.clear();
+    
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (checkbox.checked) {
+            selectedSurveyIds.add(cb.dataset.surveyId);
+        }
+    });
+    
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.deleteSurvey = async function(surveyId, email) {
+    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .eq('id', surveyId);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => s.id !== surveyId);
+        selectedSurveyIds.delete(surveyId);
+        
+        renderEmails();
+        updateDashboard();
+        alert('✅ Anket silindi!');
+        
+    } catch (e) {
+        console.error('Anket silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+window.deleteSelectedSurveys = async function() {
+    if (selectedSurveyIds.size === 0) return;
+    
+    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const idsArray = Array.from(selectedSurveyIds);
+        
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .in('id', idsArray);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => !selectedSurveyIds.has(s.id));
+        selectedSurveyIds.clear();
+        
+        renderEmails();
+        updateDashboard();
+        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        
+    } catch (e) {
+        console.error('Toplu silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 5. MAİL TASLAĞI YÖNETİMİ
+// ============================================
+
+async function loadEmailTemplate() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'email_template')
+            .single();
+        
+        if (data && data.setting_value) {
+            emailTemplate = data.setting_value;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+            console.log('✅ Mail taslağı yüklendi');
+        } else {
+            // Varsayılan taslak
+            emailTemplate = \`Merhaba,
+
+{{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
+
+Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
+
+Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
+
+Zamanınız için teşekkürler!
+
+Sevgilerle,
+{{hotel_name}}\`;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+        }
+    } catch (e) {
+        console.log('Mail taslağı yükleme hatası:', e);
+    }
+}
+
+window.saveEmailTemplate = async function() {
+    const value = document.getElementById('emailTemplateTextarea').value.trim();
+    const errEl = document.getElementById('templateError');
+    const statusEl = document.getElementById('templateStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (!value) {
+        errEl.textContent = '⚠️ Mail taslağı boş olamaz!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'email_template',
+                setting_value: value,
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        emailTemplate = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = '✅ Mail taslağı kaydedildi!';
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+    } catch (e) {
+        console.error('Mail taslağı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+window.previewEmailTemplate = function() {
+    const template = document.getElementById('emailTemplateTextarea').value;
+    const hotelName = document.getElementById('emailjsFromName').value || 'Noxinn Deluxe Hotel';
+    
+    const preview = template
+        .replace(/{{hotel_name}}/g, hotelName)
+        .replace(/{{room_number}}/g, '101')
+        .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
+    
+    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+}
+
+// ============================================
+// SAYFA YÜKLENME OLAYLARI
+// ============================================
+
+// Ayarlar sayfası açıldığında tüm ayarları yükle
+const originalNavFunction = window.nav;
+window.nav = function(el, pageId) {
+    originalNavFunction(el, pageId);
+    
+    if (pageId === 'settings') {
+        loadSuccessThreshold();
+        loadEmailTemplate();
+    }
+}
+
+// İlk yüklemede ayarları yükle
+window.addEventListener('DOMContentLoaded', () => {
+    loadSuccessThreshold();
+    loadEmailTemplate();
+});
+
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#1e3c72,#2a5298);min-height:100vh}
@@ -148,6 +1344,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 .modal-content h3{color:#1e3c72;margin-bottom:16px;font-size:20px}
 .modal-content textarea{width:100%;min-height:120px;margin-bottom:16px}
 .modal-buttons{display:flex;gap:12px;justify-content:flex-end}
+.role-badge{padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;display:inline-block}
+.role-badge.admin{background:#dbeafe;color:#1e40af}
+.role-badge.user{background:#f3f4f6;color:#6b7280}
+.email-checkbox{width:18px;height:18px;cursor:pointer;margin:0}
+.select-all-checkbox{width:18px;height:18px;cursor:pointer}
+.bulk-actions{background:#f8f9ff;padding:12px 20px;border-radius:10px;margin-bottom:16px;display:none;align-items:center;gap:12px;border:2px solid #e0e6ff}
+.bulk-actions.show{display:flex}
+.pdf-export-btn{background:#dc2626;color:white;padding:9px 20px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s}
+.pdf-export-btn:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 5px 16px rgba(220,38,38,.4)}
 @media(max-width:900px){.sidebar{width:64px}.sidebar-logo h1 span:last-child{display:none}.menu-item span:last-child{display:none}.sidebar-bottom .user-name,.sidebar-bottom .user-role,.sidebar-bottom .logout-btn{display:none}.main{margin-left:64px;padding:18px}}
 @media(max-width:600px){.sidebar{width:100%;height:auto;position:relative;display:flex;overflow-x:auto;padding:10px}.sidebar-logo{display:none}.menu-item{flex-direction:column;padding:8px 12px;font-size:10px;gap:4px}.sidebar-bottom{display:none}.main{margin-left:0;padding:12px}}
 </style>
@@ -236,6 +1441,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <!-- EMAILS -->
 <div id="emails" class="page">
 <div class="page-header"><h2>📧 E-posta Listesi</h2><p>Tüm misafir e-postaları</p></div>
+<div id="bulkActions" class="bulk-actions">
+<input type="checkbox" class="select-all-checkbox" onchange="toggleSelectAll(this)">
+<span style="color:#666;font-size:14px"><strong id="selectedCount">0</strong> seçili</span>
+<button class="btn btn-danger" onclick="deleteSelectedSurveys()">🗑️ Seçilileri Sil</button>
+</div>
 <div class="controls">
 <button class="btn btn-success" onclick="exportEmails()">📥 CSV İndir</button>
 <button class="btn btn-primary" onclick="sendBulkReviewRequest()">⭐ Toplu Google Yorum İsteği (%90+)</button>
@@ -246,20 +1456,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 <!-- REPORTS -->
 <div id="reports" class="page">
 <div class="page-header"><h2>📈 Departman Raporu</h2><p>Performans analizi</p></div>
-
-<!-- Genel Rapor Bölümü -->
-<div style="background:white;padding:20px;border-radius:14px;margin-bottom:24px;box-shadow:0 3px 14px rgba(0,0,0,.08)">
-<h3 style="color:#1e3c72;margin-bottom:16px;font-size:18px">📊 Genel Rapor</h3>
-<div class="controls">
-<div class="ctrl-group"><label>Başlangıç</label><input type="date" id="startDate"></div>
-<div class="ctrl-group"><label>Bitiş</label><input type="date" id="endDate"></div>
-<button class="btn btn-primary" onclick="generateReport()">📊 Rapor Oluştur</button>
-<button class="btn btn-success" onclick="window.print()">🖨️ Yazdır</button>
-</div>
-<div class="stats-grid" id="reportSummary"></div>
-<div class="chart-wrap" id="reportChartWrap" style="display:none"><h3>📊 Departman Performans Grafiği</h3><div class="bar-chart" id="reportChart"></div></div>
-<div id="departmentsGrid"></div>
-</div>
 
 <!-- Departman Bazlı Detaylı Rapor Bölümü -->
 <div style="background:white;padding:20px;border-radius:14px;box-shadow:0 3px 14px rgba(0,0,0,.08)">
@@ -274,9 +1470,25 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea}
 </select>
 </div>
 <button class="btn btn-primary" onclick="generateDepartmentReport()">📊 Detaylı Rapor Oluştur</button>
+<button class="pdf-export-btn" onclick="exportDepartmentReportPDF()">📄 PDF İndir</button>
 <button class="btn btn-success" onclick="exportDepartmentReport()">📥 Excel İndir</button>
 </div>
 <div id="deptReportContainer"></div>
+</div>
+
+<!-- Genel Rapor Bölümü -->
+<div id="generalReportContainer" style="background:white;padding:20px;border-radius:14px;margin-bottom:24px;box-shadow:0 3px 14px rgba(0,0,0,.08)">
+<h3 style="color:#1e3c72;margin-bottom:16px;font-size:18px">📊 Genel Rapor</h3>
+<div class="controls">
+<div class="ctrl-group"><label>Başlangıç</label><input type="date" id="startDate"></div>
+<div class="ctrl-group"><label>Bitiş</label><input type="date" id="endDate"></div>
+<button class="btn btn-primary" onclick="generateReport()">📊 Rapor Oluştur</button>
+<button class="btn btn-success" onclick="window.print()">🖨️ Yazdır</button>
+<button class="pdf-export-btn" onclick="exportGeneralReportPDF()">📄 PDF İndir</button>
+</div>
+<div class="stats-grid" id="reportSummary"></div>
+<div class="chart-wrap" id="reportChartWrap" style="display:none"><h3>📊 Departman Performans Grafiği</h3><div class="bar-chart" id="reportChart"></div></div>
+<div id="departmentsGrid"></div>
 </div>
 </div>
 
@@ -332,6 +1544,42 @@ EmailJS ile otomatik mail gönderimi yapabilirsiniz (200 mail/ay ücretsiz).
 📤 Test Maili Gönder (Kendinize)
 </button>
 </div>
+
+<!-- BAŞARI BARAJI AYARI -->
+<div class="add-user-form" style="background:#fef3c7;border:2px solid #f59e0b">
+<h3>🎯 Başarı Yüzdesi Barajı</h3>
+<p style="color:#666;font-size:13px;margin-bottom:12px">
+Başarı olarak kabul edilecek minimum yüzdeyi belirleyin. Grafiklerde bu değerin altındaki puanlar kırmızı, üstündekiler yeşil görünür.
+</p>
+<div class="form-row">
+<input type="number" id="successThresholdInput" placeholder="80" min="50" max="100" style="max-width:120px" value="80">
+<span style="padding:10px;color:#666">%</span>
+<button class="btn btn-primary" onclick="saveSuccessThreshold()">💾 Kaydet</button>
+</div>
+<div class="login-error" id="thresholdError" style="margin-top:12px"></div>
+<div id="thresholdStatus" style="margin-top:12px;display:none;padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;color:#059669">
+✅ Başarı barajı kaydedildi!
+</div>
+</div>
+
+<!-- MAİL TASLAĞI AYARI -->
+<div class="add-user-form" style="background:#f0fdfa;border:2px solid #14b8a6">
+<h3>📧 Mail Taslağı Düzenleme</h3>
+<p style="color:#666;font-size:13px;margin-bottom:12px">
+Müşterilere gönderilecek Google yorum isteği mailinin içeriğini düzenleyin.
+<br><strong>Kullanılabilir değişkenler:</strong> {{hotel_name}}, {{room_number}}, {{guest_name}}
+</p>
+<textarea id="emailTemplateTextarea" style="width:100%;min-height:200px;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit" placeholder="Mail içeriğini buraya yazın..."></textarea>
+<div style="display:flex;gap:12px;margin-top:12px">
+<button class="btn btn-primary" onclick="saveEmailTemplate()" style="flex:1">💾 Kaydet</button>
+<button class="btn btn-info" onclick="previewEmailTemplate()">👁️ Önizleme</button>
+</div>
+<div class="login-error" id="templateError" style="margin-top:12px"></div>
+<div id="templateStatus" style="margin-top:12px;display:none;padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;color:#059669">
+✅ Mail taslağı kaydedildi!
+</div>
+</div>
+
 
 <div class="add-user-form">
 <h3>➕ Yeni Soru Ekle</h3>
@@ -744,30 +1992,31 @@ window.deleteSurvey=async function(id,room){
 
 function renderEmails(){
     const el=document.getElementById('emailsTable');
-    const emails=allSurveys.filter(s=>s.email).map(s=>{
-        let sum=0,cnt=0;
-        DEPTS.forEach(d=>{
-            const r=getRating(s,d.key);
-            if(r>0){sum+=r;cnt++;}
-        });
-        const avg=cnt>0?sum/cnt:0;
-        const pct=(avg/5*100).toFixed(0);
-        return{...s,avg,pct};
-    }).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-
+    const emails=allSurveys.filter(s=>s.email);
+    selectedSurveyIds.clear();
+    document.getElementById('bulkActions').classList.remove('show');
     if(!emails.length){el.innerHTML='<div class="empty-state"><div class="e-icon">📧</div><h2>E-posta yok</h2></div>';return}
-
     el.innerHTML=`<table>
-        <thead><tr><th>#</th><th>E-posta</th><th>Oda</th><th>Tarih</th><th>Puan</th><th>%</th><th></th></tr></thead>
-        <tbody>${emails.map((e,i)=>`<tr>
-            <td>${i+1}</td>
-            <td><strong>${e.email}</strong></td>
-            <td>${e.room_number}</td>
-            <td>${new Date(e.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}</td>
-            <td>${e.avg.toFixed(1)}★</td>
-            <td style="color:${e.pct>=80?'#10b981':'#ef4444'};font-weight:700">%${e.pct}</td>
-            <td>${e.pct>=80?`<button class="btn btn-info" onclick="openReviewModal('${e.email}','${e.room_number}')">⭐ Yorum İste</button>`:''}</td>
-        </tr>`).join('')}</tbody>
+        <thead><tr><th style="width:40px"><input type="checkbox" class="select-all-checkbox" onchange="toggleSelectAll(this)"></th><th>E-posta</th><th>Oda</th><th>Tarih</th><th>Ortalama Puan</th><th></th></tr></thead>
+        <tbody>${emails.map(s=>{
+            let sum=0,cnt=0;
+            DEPTS.forEach(d=>{const r=getRating(s,d.key);if(r>0){sum+=r;cnt++;}});
+            const avg=cnt>0?(sum/cnt).toFixed(1):0;
+            const date=new Date(s.created_at).toLocaleDateString('tr-TR');
+            const pct=cnt>0?(sum/cnt/5*100):0;
+            const cls=pct>=successThreshold?'success':'danger';
+            return`<tr>
+                <td><input type="checkbox" class="email-checkbox" data-survey-id="${s.id}" onchange="toggleSurveySelect('${s.id}',this)"></td>
+                <td><strong>${s.email}</strong></td>
+                <td>${s.room_number||'-'}</td>
+                <td>${date}</td>
+                <td><span class="stat-badge ${cls}">⭐${avg}</span></td>
+                <td>
+                    ${pct>=90?`<button class="btn btn-info" onclick="openReviewModal('${s.email}')">⭐ Yorum İste</button>`:' '}
+                    ${curUser.role==='admin'?`<button class="btn btn-danger" onclick="deleteSurvey('${s.id}','${s.email}')">🗑️</button>`:''}
+                </td>
+            </tr>`;
+        }).join('')}</tbody>
     </table>`;
 }
 
@@ -795,11 +2044,11 @@ window.openReviewModal=function(email,room){
     document.getElementById('modalEmail').textContent=email;
     document.getElementById('reviewMessage').value=`Merhaba,
 
-Noxinn Deluxe Hotel'de konakladığınız için teşekkür ederiz!
+Noxinn Deluxe Hotel'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
 
-Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
+Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
 
-Google Yorumlarımız: https://g.page/r/CRbyUyHOZ7snEBM/review
+Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
 
 Zamanınız için teşekkürler!
 
@@ -1023,18 +2272,10 @@ window.sendBulkReviewRequest = async function() {
         
         emailjs.init(publicKey);
         
-        const defaultMessage = `Merhaba,
-
-${hotelName}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
-
-Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
-
-Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
-
-Zamanınız için teşekkürler!
-
-Sevgilerle,
-${hotelName}`;
+        const defaultMessage = emailTemplate
+            .replace(/{{hotel_name}}/g, hotelName)
+            .replace(/{{room_number}}/g, survey.room_number || '')
+            .replace(/{{guest_name}}/g, 'Değerli Misafirimiz');
         
         let successCount = 0;
         let failCount = 0;
@@ -1112,15 +2353,15 @@ window.generateReport=function(){
     document.getElementById('reportChartWrap').style.display='block';
     const chartEl=document.getElementById('reportChart');
     chartEl.innerHTML=dData.map(d=>{
-        const cls=d.pct>=80?'green':'red';
+        const cls=d.pct>=successThreshold?'green':'red';
         return`<div class="bar ${cls}" style="height:${d.pct*2}px" title="${d.name}: %${d.pct}">
             <div class="bar-value ${cls}">%${d.pct}</div>
             <div class="bar-label">${d.name.length>11?d.name.slice(0,11)+'..':d.name}</div></div>`;
     }).join('');
 
     document.getElementById('departmentsGrid').innerHTML=dData.map(d=>{
-        const sc=d.pct>=80?'excellent':'danger';
-        const pc=d.pct>=80?'excellent':'danger';
+        const sc=d.pct>=successThreshold?'excellent':'danger';
+        const pc=d.pct>=successThreshold?'excellent':'danger';
         return`<div class="dept-card">
             <div class="dept-header"><div class="dept-name">${d.icon} ${d.name}</div><div class="dept-score ${sc}">%${d.pct}</div></div>
             ${d.count?`
@@ -1597,7 +2838,7 @@ function renderUsers(){
             <td><strong>${u.username}</strong> ${u.id===curUser.id?'<span style="font-size:10px;color:#10b981">(Sen)</span>':''}</td>
             <td><span class="role-badge ${u.role}">${u.role==='admin'?'Admin':'Kullanıcı'}</span></td>
             <td>${new Date(u.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</td>
-            <td>${u.id!==curUser.id&&curUser.role==='admin'?`<button class="btn btn-danger" onclick="deleteUser('${u.id}','${u.username}')">Sil</button>`:''}</td>
+            <td>${u.id!==curUser.id&&curUser.role==='admin'?`<button class=\"btn btn-info\" onclick=\"changeUserRole('${u.id}','${u.role}')\">🔄 Rol Değiştir</button> <button class=\"btn btn-danger\" onclick=\"deleteUser('${u.id}','${u.username}')\">Sil</button>`:''}}</td>
         </tr>`).join('')}</tbody>
     </table>`;
 }
@@ -2117,6 +3358,404 @@ window.deleteAIAnalysis = async function(analysisId, roomNumber) {
 }
 
 if(!checkSession()){}
+// ============================================
+// OTEL YÖNETİM PANELİ V2.0 - YENİ ÖZELLİKLER
+// ============================================
+
+// Global değişkenler
+let successThreshold = 80; // Başarı barajı
+let emailTemplate = ''; // Mail taslağı
+let selectedSurveyIds = new Set(); // Seçili anketler
+
+// ============================================
+// 1. KULLANICI YETKİ YÖNETİMİ
+// ============================================
+
+window.changeUserRole = async function(userId, currentRole) {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const user = allUsers.find(u => u.id === userId);
+    
+    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('users')
+            .update({ role: newRole })
+            .eq('id', userId);
+        
+        if (error) throw error;
+        
+        // Local state'i güncelle
+        user.role = newRole;
+        renderUsers();
+        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        
+    } catch (e) {
+        console.error('Rol değiştirme hatası:', e);
+        alert('❌ Rol değiştirilemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 2. PDF EXPORT FONKSİYONLARI
+// ============================================
+
+window.exportGeneralReportPDF = async function() {
+    const element = document.getElementById('generalReportContainer');
+    if (!element) {
+        alert('⚠️ Önce rapor oluşturun!');
+        return;
+    }
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+window.exportDepartmentReportPDF = async function() {
+    const element = document.getElementById('deptReportContainer');
+    if (!element || !element.innerHTML) {
+        alert('⚠️ Önce departman raporu oluşturun!');
+        return;
+    }
+    
+    const deptKey = document.getElementById('deptSelect').value;
+    const dept = DEPTS.find(d => d.key === deptKey);
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+        
+        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        
+    } catch (e) {
+        console.error('PDF export hatası:', e);
+        alert('❌ PDF oluşturulamadı');
+    }
+}
+
+// ============================================
+// 3. BAŞARI BARAJI YÖNETİMİ
+// ============================================
+
+async function loadSuccessThreshold() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'success_threshold')
+            .single();
+        
+        if (data && data.setting_value) {
+            successThreshold = parseInt(data.setting_value);
+            const input = document.getElementById('successThresholdInput');
+            if (input) input.value = successThreshold;
+            console.log('✅ Başarı barajı yüklendi:', successThreshold);
+        }
+    } catch (e) {
+        console.log('Başarı barajı ayarı yok, varsayılan kullanılıyor:', successThreshold);
+    }
+}
+
+window.saveSuccessThreshold = async function() {
+    const value = parseInt(document.getElementById('successThresholdInput').value);
+    const errEl = document.getElementById('thresholdError');
+    const statusEl = document.getElementById('thresholdStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (isNaN(value) || value < 50 || value > 100) {
+        errEl.textContent = '⚠️ Başarı barajı 50-100 arasında olmalı!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'success_threshold',
+                setting_value: value.toString(),
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        successThreshold = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+        // Raporları yenile
+        if (document.getElementById('reports').classList.contains('active')) {
+            generateReport();
+        }
+        
+    } catch (e) {
+        console.error('Başarı barajı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+// ============================================
+// 4. MAİL SİLME FONKSİYONLARI
+// ============================================
+
+window.toggleSurveySelect = function(surveyId, checkbox) {
+    if (checkbox.checked) {
+        selectedSurveyIds.add(surveyId);
+    } else {
+        selectedSurveyIds.delete(surveyId);
+    }
+    
+    // Toplu silme butonunu göster/gizle
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.toggleSelectAll = function(checkbox) {
+    const checkboxes = document.querySelectorAll('.email-checkbox');
+    selectedSurveyIds.clear();
+    
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (checkbox.checked) {
+            selectedSurveyIds.add(cb.dataset.surveyId);
+        }
+    });
+    
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedSurveyIds.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedSurveyIds.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+window.deleteSurvey = async function(surveyId, email) {
+    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .eq('id', surveyId);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => s.id !== surveyId);
+        selectedSurveyIds.delete(surveyId);
+        
+        renderEmails();
+        updateDashboard();
+        alert('✅ Anket silindi!');
+        
+    } catch (e) {
+        console.error('Anket silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+window.deleteSelectedSurveys = async function() {
+    if (selectedSurveyIds.size === 0) return;
+    
+    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+        return;
+    }
+    
+    try {
+        const idsArray = Array.from(selectedSurveyIds);
+        
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .in('id', idsArray);
+        
+        if (error) throw error;
+        
+        // Local state'ten kaldır
+        allSurveys = allSurveys.filter(s => !selectedSurveyIds.has(s.id));
+        selectedSurveyIds.clear();
+        
+        renderEmails();
+        updateDashboard();
+        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        
+    } catch (e) {
+        console.error('Toplu silme hatası:', e);
+        alert('❌ Silinemedi: ' + e.message);
+    }
+}
+
+// ============================================
+// 5. MAİL TASLAĞI YÖNETİMİ
+// ============================================
+
+async function loadEmailTemplate() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_settings')
+            .select('setting_value')
+            .eq('setting_key', 'email_template')
+            .single();
+        
+        if (data && data.setting_value) {
+            emailTemplate = data.setting_value;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+            console.log('✅ Mail taslağı yüklendi');
+        } else {
+            // Varsayılan taslak
+            emailTemplate = \`Merhaba,
+
+{{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
+
+Memnuniyetinizden dolayı çok mutluyuz. Deneyiminizi Google'da yorum yaparak diğer misafirlerimizle paylaşır mısınız?
+
+Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
+
+Zamanınız için teşekkürler!
+
+Sevgilerle,
+{{hotel_name}}\`;
+            const textarea = document.getElementById('emailTemplateTextarea');
+            if (textarea) textarea.value = emailTemplate;
+        }
+    } catch (e) {
+        console.log('Mail taslağı yükleme hatası:', e);
+    }
+}
+
+window.saveEmailTemplate = async function() {
+    const value = document.getElementById('emailTemplateTextarea').value.trim();
+    const errEl = document.getElementById('templateError');
+    const statusEl = document.getElementById('templateStatus');
+    
+    errEl.classList.remove('show');
+    statusEl.style.display = 'none';
+    
+    if (!value) {
+        errEl.textContent = '⚠️ Mail taslağı boş olamaz!';
+        errEl.classList.add('show');
+        return;
+    }
+    
+    try {
+        const { error } = await supabase
+            .from('ai_settings')
+            .upsert({
+                setting_key: 'email_template',
+                setting_value: value,
+                updated_at: new Date().toISOString(),
+                updated_by: curUser.username
+            }, {
+                onConflict: 'setting_key'
+            });
+        
+        if (error) throw error;
+        
+        emailTemplate = value;
+        statusEl.style.display = 'block';
+        statusEl.textContent = '✅ Mail taslağı kaydedildi!';
+        setTimeout(() => statusEl.style.display = 'none', 5000);
+        
+    } catch (e) {
+        console.error('Mail taslağı kaydetme hatası:', e);
+        errEl.textContent = '⚠️ Kaydedilemedi: ' + e.message;
+        errEl.classList.add('show');
+    }
+}
+
+window.previewEmailTemplate = function() {
+    const template = document.getElementById('emailTemplateTextarea').value;
+    const hotelName = document.getElementById('emailjsFromName').value || 'Noxinn Deluxe Hotel';
+    
+    const preview = template
+        .replace(/{{hotel_name}}/g, hotelName)
+        .replace(/{{room_number}}/g, '101')
+        .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
+    
+    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+}
+
+// ============================================
+// SAYFA YÜKLENME OLAYLARI
+// ============================================
+
+// Ayarlar sayfası açıldığında tüm ayarları yükle
+const originalNavFunction = window.nav;
+window.nav = function(el, pageId) {
+    originalNavFunction(el, pageId);
+    
+    if (pageId === 'settings') {
+        loadSuccessThreshold();
+        loadEmailTemplate();
+    }
+}
+
+// İlk yüklemede ayarları yükle
+window.addEventListener('DOMContentLoaded', () => {
+    loadSuccessThreshold();
+    loadEmailTemplate();
+});
+
 </script>
 </body>
 </html>
