@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Supabase Test</title>
+</head>
+<body>
+    <h1>Supabase Bağlantı Testi</h1>
+    <button onclick="testConnection()">Bağlantıyı Test Et</button>
+    <pre id="result"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://eecjimwhcenxyrtepuph.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlY2ppbXdoY2VueHlydGVwdXBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTMxMjYsImV4cCI6MjA4NTkyOTEyNn0.OVezVlmS166fajXesj0v2rTSyZlW6VNCnyjJPisbwtc';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Test ediliyor...';
+
+            try {
+                // Users tablosunu test et
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .limit(5);
+
+                if (usersError) throw usersError;
+
+                // Feedbacks tablosunu test et
+                const { data: feedbacks, error: feedbacksError } = await supabase
+                    .from('feedbacks')
+                    .select('*')
+                    .limit(5);
+
+                if (feedbacksError) throw feedbacksError;
+
+                // Amenities tablosunu test et (varsa)
+                const { data: amenities, error: amenitiesError } = await supabase
+                    .from('amenities')
+                    .select('*')
+                    .limit(5);
+
+                resultDiv.textContent = `✅ BAŞARILI!
+
+Users: ${users.length} kayıt
+Feedbacks: ${feedbacks.length} kayıt
+Amenities: ${amenities ? amenities.length : 'Tablo yok (henüz oluşturulmamış)'} kayıt
+
+--- USERS ---
+${JSON.stringify(users, null, 2)}
+
+--- FEEDBACKS ---
+${JSON.stringify(feedbacks, null, 2)}
+
+--- AMENITIES ---
+${amenities ? JSON.stringify(amenities, null, 2) : 'Tablo henüz oluşturulmamış'}
+`;
+            } catch (error) {
+                resultDiv.textContent = `❌ HATA!
+
+${error.message}
+
+Detaylar:
+${JSON.stringify(error, null, 2)}
+`;
+            }
+        }
+    </script>
+</body>
+</html>
