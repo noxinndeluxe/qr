@@ -21,7 +21,7 @@ window.changeUserRole = async function(userId, currentRole) {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     const user = allUsers.find(u => u.id === userId);
     
-    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+    if (!confirm(`"${user.username}" kullanıcısının rolünü "${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?`)) {
         return;
     }
     
@@ -36,7 +36,7 @@ window.changeUserRole = async function(userId, currentRole) {
         // Local state'i güncelle
         user.role = newRole;
         renderUsers();
-        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        alert(`✅ ${user.username} artık ${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}`);
         
     } catch (e) {
         console.error('Rol değiştirme hatası:', e);
@@ -68,7 +68,7 @@ window.exportGeneralReportPDF = async function() {
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`Genel_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -111,7 +111,7 @@ window.exportDepartmentReportPDF = async function() {
             heightLeft -= pageHeight;
         }
         
-        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`${dept.name}_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -172,7 +172,7 @@ window.saveSuccessThreshold = async function() {
         
         successThreshold = value;
         statusEl.style.display = 'block';
-        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        statusEl.textContent = `✅ Başarı barajı %${value} olarak kaydedildi!`;
         setTimeout(() => statusEl.style.display = 'none', 5000);
         
         // Raporları yenile
@@ -233,7 +233,7 @@ window.toggleSelectAll = function(checkbox) {
 }
 
 window.deleteSurvey = async function(surveyId, email) {
-    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`"${email}" adresine ait anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -262,7 +262,7 @@ window.deleteSurvey = async function(surveyId, email) {
 window.deleteSelectedSurveys = async function() {
     if (selectedSurveyIds.size === 0) return;
     
-    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -282,7 +282,7 @@ window.deleteSelectedSurveys = async function() {
         
         renderEmails();
         updateDashboard();
-        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        alert(`✅ ${idsArray.length} anket silindi!`);
         
     } catch (e) {
         console.error('Toplu silme hatası:', e);
@@ -309,7 +309,7 @@ async function loadEmailTemplate() {
             console.log('✅ Mail taslağı yüklendi');
         } else {
             // Varsayılan taslak
-            emailTemplate = \`Merhaba,
+            emailTemplate = `Merhaba,
 
 {{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
 
@@ -320,7 +320,7 @@ Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
 Zamanınız için teşekkürler!
 
 Sevgilerle,
-{{hotel_name}}\`;
+{{hotel_name}}`;
             const textarea = document.getElementById('emailTemplateTextarea');
             if (textarea) textarea.value = emailTemplate;
         }
@@ -378,23 +378,14 @@ window.previewEmailTemplate = function() {
         .replace(/{{room_number}}/g, '101')
         .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
     
-    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+    alert(`📧 Mail Önizleme:\n\n${preview}`);
 }
 
 // ============================================
 // SAYFA YÜKLENME OLAYLARI
 // ============================================
 
-// Ayarlar sayfası açıldığında tüm ayarları yükle
-const originalNavFunction = window.nav;
-window.nav = function(el, pageId) {
-    originalNavFunction(el, pageId);
-    
-    if (pageId === 'settings') {
-        loadSuccessThreshold();
-        loadEmailTemplate();
-    }
-}
+
 
 // İlk yüklemede ayarları yükle
 window.addEventListener('DOMContentLoaded', () => {
@@ -420,7 +411,7 @@ window.changeUserRole = async function(userId, currentRole) {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     const user = allUsers.find(u => u.id === userId);
     
-    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+    if (!confirm(`"${user.username}" kullanıcısının rolünü "${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?`)) {
         return;
     }
     
@@ -435,7 +426,7 @@ window.changeUserRole = async function(userId, currentRole) {
         // Local state'i güncelle
         user.role = newRole;
         renderUsers();
-        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        alert(`✅ ${user.username} artık ${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}`);
         
     } catch (e) {
         console.error('Rol değiştirme hatası:', e);
@@ -467,7 +458,7 @@ window.exportGeneralReportPDF = async function() {
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`Genel_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -510,7 +501,7 @@ window.exportDepartmentReportPDF = async function() {
             heightLeft -= pageHeight;
         }
         
-        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`${dept.name}_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -571,7 +562,7 @@ window.saveSuccessThreshold = async function() {
         
         successThreshold = value;
         statusEl.style.display = 'block';
-        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        statusEl.textContent = `✅ Başarı barajı %${value} olarak kaydedildi!`;
         setTimeout(() => statusEl.style.display = 'none', 5000);
         
         // Raporları yenile
@@ -632,7 +623,7 @@ window.toggleSelectAll = function(checkbox) {
 }
 
 window.deleteSurvey = async function(surveyId, email) {
-    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`"${email}" adresine ait anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -661,7 +652,7 @@ window.deleteSurvey = async function(surveyId, email) {
 window.deleteSelectedSurveys = async function() {
     if (selectedSurveyIds.size === 0) return;
     
-    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -681,7 +672,7 @@ window.deleteSelectedSurveys = async function() {
         
         renderEmails();
         updateDashboard();
-        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        alert(`✅ ${idsArray.length} anket silindi!`);
         
     } catch (e) {
         console.error('Toplu silme hatası:', e);
@@ -708,7 +699,7 @@ async function loadEmailTemplate() {
             console.log('✅ Mail taslağı yüklendi');
         } else {
             // Varsayılan taslak
-            emailTemplate = \`Merhaba,
+            emailTemplate = `Merhaba,
 
 {{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
 
@@ -719,7 +710,7 @@ Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
 Zamanınız için teşekkürler!
 
 Sevgilerle,
-{{hotel_name}}\`;
+{{hotel_name}}`;
             const textarea = document.getElementById('emailTemplateTextarea');
             if (textarea) textarea.value = emailTemplate;
         }
@@ -777,23 +768,14 @@ window.previewEmailTemplate = function() {
         .replace(/{{room_number}}/g, '101')
         .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
     
-    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+    alert(`📧 Mail Önizleme:\n\n${preview}`);
 }
 
 // ============================================
 // SAYFA YÜKLENME OLAYLARI
 // ============================================
 
-// Ayarlar sayfası açıldığında tüm ayarları yükle
-const originalNavFunction = window.nav;
-window.nav = function(el, pageId) {
-    originalNavFunction(el, pageId);
-    
-    if (pageId === 'settings') {
-        loadSuccessThreshold();
-        loadEmailTemplate();
-    }
-}
+
 
 // İlk yüklemede ayarları yükle
 window.addEventListener('DOMContentLoaded', () => {
@@ -819,7 +801,7 @@ window.changeUserRole = async function(userId, currentRole) {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     const user = allUsers.find(u => u.id === userId);
     
-    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+    if (!confirm(`"${user.username}" kullanıcısının rolünü "${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?`)) {
         return;
     }
     
@@ -834,7 +816,7 @@ window.changeUserRole = async function(userId, currentRole) {
         // Local state'i güncelle
         user.role = newRole;
         renderUsers();
-        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        alert(`✅ ${user.username} artık ${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}`);
         
     } catch (e) {
         console.error('Rol değiştirme hatası:', e);
@@ -866,7 +848,7 @@ window.exportGeneralReportPDF = async function() {
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`Genel_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -909,7 +891,7 @@ window.exportDepartmentReportPDF = async function() {
             heightLeft -= pageHeight;
         }
         
-        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`${dept.name}_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -970,7 +952,7 @@ window.saveSuccessThreshold = async function() {
         
         successThreshold = value;
         statusEl.style.display = 'block';
-        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        statusEl.textContent = `✅ Başarı barajı %${value} olarak kaydedildi!`;
         setTimeout(() => statusEl.style.display = 'none', 5000);
         
         // Raporları yenile
@@ -1031,7 +1013,7 @@ window.toggleSelectAll = function(checkbox) {
 }
 
 window.deleteSurvey = async function(surveyId, email) {
-    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`"${email}" adresine ait anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -1060,7 +1042,7 @@ window.deleteSurvey = async function(surveyId, email) {
 window.deleteSelectedSurveys = async function() {
     if (selectedSurveyIds.size === 0) return;
     
-    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -1080,7 +1062,7 @@ window.deleteSelectedSurveys = async function() {
         
         renderEmails();
         updateDashboard();
-        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        alert(`✅ ${idsArray.length} anket silindi!`);
         
     } catch (e) {
         console.error('Toplu silme hatası:', e);
@@ -1107,7 +1089,7 @@ async function loadEmailTemplate() {
             console.log('✅ Mail taslağı yüklendi');
         } else {
             // Varsayılan taslak
-            emailTemplate = \`Merhaba,
+            emailTemplate = `Merhaba,
 
 {{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
 
@@ -1118,7 +1100,7 @@ Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
 Zamanınız için teşekkürler!
 
 Sevgilerle,
-{{hotel_name}}\`;
+{{hotel_name}}`;
             const textarea = document.getElementById('emailTemplateTextarea');
             if (textarea) textarea.value = emailTemplate;
         }
@@ -1176,23 +1158,14 @@ window.previewEmailTemplate = function() {
         .replace(/{{room_number}}/g, '101')
         .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
     
-    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+    alert(`📧 Mail Önizleme:\n\n${preview}`);
 }
 
 // ============================================
 // SAYFA YÜKLENME OLAYLARI
 // ============================================
 
-// Ayarlar sayfası açıldığında tüm ayarları yükle
-const originalNavFunction = window.nav;
-window.nav = function(el, pageId) {
-    originalNavFunction(el, pageId);
-    
-    if (pageId === 'settings') {
-        loadSuccessThreshold();
-        loadEmailTemplate();
-    }
-}
+
 
 // İlk yüklemede ayarları yükle
 window.addEventListener('DOMContentLoaded', () => {
@@ -1831,7 +1804,7 @@ window.nav=function(el,pageId){
     if(pageId==='users')renderUsers();
     if(pageId==='emails')renderEmails();
     if(pageId==='ai-analyses')loadAIAnalyses();
-    if(pageId==='settings'){renderQuestions();loadGroqKey();loadEmailJSSettings();}
+    if(pageId==='settings'){renderQuestions();loadGroqKey();loadEmailJSSettings();loadSuccessThreshold();loadEmailTemplate();}
 }
 
 function updateDashboard(){
@@ -3375,7 +3348,7 @@ window.changeUserRole = async function(userId, currentRole) {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     const user = allUsers.find(u => u.id === userId);
     
-    if (!confirm(\`"\${user.username}" kullanıcısının rolünü "\${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "\${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?\`)) {
+    if (!confirm(`"${user.username}" kullanıcısının rolünü "${currentRole === 'admin' ? 'Admin' : 'Kullanıcı'}" -> "${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}" olarak değiştirmek istiyor musunuz?`)) {
         return;
     }
     
@@ -3390,7 +3363,7 @@ window.changeUserRole = async function(userId, currentRole) {
         // Local state'i güncelle
         user.role = newRole;
         renderUsers();
-        alert(\`✅ \${user.username} artık \${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}\`);
+        alert(`✅ ${user.username} artık ${newRole === 'admin' ? 'Admin' : 'Kullanıcı'}`);
         
     } catch (e) {
         console.error('Rol değiştirme hatası:', e);
@@ -3422,7 +3395,7 @@ window.exportGeneralReportPDF = async function() {
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
         pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        pdf.save(\`Genel_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`Genel_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -3465,7 +3438,7 @@ window.exportDepartmentReportPDF = async function() {
             heightLeft -= pageHeight;
         }
         
-        pdf.save(\`\${dept.name}_Rapor_\${new Date().toISOString().slice(0, 10)}.pdf\`);
+        pdf.save(`${dept.name}_Rapor_${new Date().toISOString().slice(0, 10)}.pdf`);
         
     } catch (e) {
         console.error('PDF export hatası:', e);
@@ -3526,7 +3499,7 @@ window.saveSuccessThreshold = async function() {
         
         successThreshold = value;
         statusEl.style.display = 'block';
-        statusEl.textContent = \`✅ Başarı barajı %\${value} olarak kaydedildi!\`;
+        statusEl.textContent = `✅ Başarı barajı %${value} olarak kaydedildi!`;
         setTimeout(() => statusEl.style.display = 'none', 5000);
         
         // Raporları yenile
@@ -3587,7 +3560,7 @@ window.toggleSelectAll = function(checkbox) {
 }
 
 window.deleteSurvey = async function(surveyId, email) {
-    if (!confirm(\`"\${email}" adresine ait anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`"${email}" adresine ait anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -3616,7 +3589,7 @@ window.deleteSurvey = async function(surveyId, email) {
 window.deleteSelectedSurveys = async function() {
     if (selectedSurveyIds.size === 0) return;
     
-    if (!confirm(\`\${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?\`)) {
+    if (!confirm(`${selectedSurveyIds.size} anketi silmek istediğinize emin misiniz?`)) {
         return;
     }
     
@@ -3636,7 +3609,7 @@ window.deleteSelectedSurveys = async function() {
         
         renderEmails();
         updateDashboard();
-        alert(\`✅ \${idsArray.length} anket silindi!\`);
+        alert(`✅ ${idsArray.length} anket silindi!`);
         
     } catch (e) {
         console.error('Toplu silme hatası:', e);
@@ -3663,7 +3636,7 @@ async function loadEmailTemplate() {
             console.log('✅ Mail taslağı yüklendi');
         } else {
             // Varsayılan taslak
-            emailTemplate = \`Merhaba,
+            emailTemplate = `Merhaba,
 
 {{hotel_name}}'de konaklama deneyiminizi bizimle paylaştığınız için teşekkür ederiz!
 
@@ -3674,7 +3647,7 @@ Google Yorumlarımız: https://g.page/r/YOUR_PLACE_ID/review
 Zamanınız için teşekkürler!
 
 Sevgilerle,
-{{hotel_name}}\`;
+{{hotel_name}}`;
             const textarea = document.getElementById('emailTemplateTextarea');
             if (textarea) textarea.value = emailTemplate;
         }
@@ -3732,23 +3705,14 @@ window.previewEmailTemplate = function() {
         .replace(/{{room_number}}/g, '101')
         .replace(/{{guest_name}}/g, 'Sayın Misafirimiz');
     
-    alert(\`📧 Mail Önizleme:\n\n\${preview}\`);
+    alert(`📧 Mail Önizleme:\n\n${preview}`);
 }
 
 // ============================================
 // SAYFA YÜKLENME OLAYLARI
 // ============================================
 
-// Ayarlar sayfası açıldığında tüm ayarları yükle
-const originalNavFunction = window.nav;
-window.nav = function(el, pageId) {
-    originalNavFunction(el, pageId);
-    
-    if (pageId === 'settings') {
-        loadSuccessThreshold();
-        loadEmailTemplate();
-    }
-}
+
 
 // İlk yüklemede ayarları yükle
 window.addEventListener('DOMContentLoaded', () => {
