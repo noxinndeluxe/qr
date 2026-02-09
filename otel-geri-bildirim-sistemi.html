@@ -741,6 +741,22 @@
                                 <option value="closed">Kapalı</option>
                             </select>
 
+                            <input
+                                type="date"
+                                value={filters.dateFrom}
+                                onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+                                placeholder="Başlangıç"
+                                title="Başlangıç Tarihi"
+                            />
+
+                            <input
+                                type="date"
+                                value={filters.dateTo}
+                                onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+                                placeholder="Bitiş"
+                                title="Bitiş Tarihi"
+                            />
+
                             <button className="btn btn-ghost" onClick={() => setFilters({ department: 'all', type: 'all', dateFrom: '', dateTo: '', status: 'all', search: '' })}>
                                 ✕ Temizle
                             </button>
@@ -808,15 +824,26 @@
         }
 
         function AmenitiesView({ amenities, isAdmin, onAdd, onDelete }) {
+            const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
+
+            const filteredAmenities = amenities.filter(am => {
+                if (dateFilter.from && am.created_at < dateFilter.from) return false;
+                if (dateFilter.to) {
+                    const amDate = new Date(am.created_at).toISOString().split('T')[0];
+                    if (amDate > dateFilter.to) return false;
+                }
+                return true;
+            });
+
             return (
                 <div className="view-container">
                     <div className="view-header">
                         <div>
                             <h1>Oda İkramları</h1>
-                            <p>{amenities.length} ikram kaydı</p>
+                            <p>{filteredAmenities.length} ikram kaydı</p>
                         </div>
                         <div className="header-actions">
-                            <button className="btn btn-secondary" onClick={() => exportAmenitiesExcel(amenities)}>
+                            <button className="btn btn-secondary" onClick={() => exportAmenitiesExcel(filteredAmenities)}>
                                 📊 Excel
                             </button>
                             {isAdmin && (
@@ -827,8 +854,31 @@
                         </div>
                     </div>
 
+                    <div className="filters-panel">
+                        <div className="filter-row">
+                            <span style={{fontWeight: 600, color: 'var(--gray-700)'}}>📅 Tarih Filtresi:</span>
+                            <input
+                                type="date"
+                                value={dateFilter.from}
+                                onChange={(e) => setDateFilter({...dateFilter, from: e.target.value})}
+                                placeholder="Başlangıç"
+                                title="Başlangıç Tarihi"
+                            />
+                            <input
+                                type="date"
+                                value={dateFilter.to}
+                                onChange={(e) => setDateFilter({...dateFilter, to: e.target.value})}
+                                placeholder="Bitiş"
+                                title="Bitiş Tarihi"
+                            />
+                            <button className="btn btn-ghost" onClick={() => setDateFilter({ from: '', to: '' })}>
+                                ✕ Temizle
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="amenities-grid">
-                        {amenities.map(am => (
+                        {filteredAmenities.map(am => (
                             <div key={am.id} className="amenity-card">
                                 <div className="amenity-header">
                                     <div className="amenity-icon">🎁</div>
@@ -910,13 +960,22 @@
 
         function AlaCarteView({ restaurants, reservations, isAdmin, onAddRestaurant, onEditRestaurant, onDeleteRestaurant, onAddReservation, onEditReservation, onDeleteReservation }) {
             const [activeTab, setActiveTab] = useState('reservations');
+            const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
+            const [restaurantFilter, setRestaurantFilter] = useState('all');
+
+            const filteredReservations = reservations.filter(res => {
+                if (restaurantFilter !== 'all' && res.restaurant_id !== parseInt(restaurantFilter)) return false;
+                if (dateFilter.from && res.reservation_date < dateFilter.from) return false;
+                if (dateFilter.to && res.reservation_date > dateFilter.to) return false;
+                return true;
+            });
 
             return (
                 <div className="view-container">
                     <div className="view-header">
                         <div>
                             <h1>A'la Carte Rezervasyon</h1>
-                            <p>{restaurants.length} restoran, {reservations.length} rezervasyon</p>
+                            <p>{restaurants.length} restoran, {filteredReservations.length} rezervasyon</p>
                         </div>
                     </div>
 
@@ -940,8 +999,41 @@
                                 )}
                             </div>
 
+                            <div className="filters-panel">
+                                <div className="filter-row">
+                                    <span style={{fontWeight: 600, color: 'var(--gray-700)'}}>🔍 Filtrele:</span>
+                                    
+                                    <select value={restaurantFilter} onChange={(e) => setRestaurantFilter(e.target.value)}>
+                                        <option value="all">Tüm Restoranlar</option>
+                                        {restaurants.map(r => (
+                                            <option key={r.id} value={r.id}>{r.name}</option>
+                                        ))}
+                                    </select>
+
+                                    <input
+                                        type="date"
+                                        value={dateFilter.from}
+                                        onChange={(e) => setDateFilter({...dateFilter, from: e.target.value})}
+                                        placeholder="Başlangıç"
+                                        title="Başlangıç Tarihi"
+                                    />
+
+                                    <input
+                                        type="date"
+                                        value={dateFilter.to}
+                                        onChange={(e) => setDateFilter({...dateFilter, to: e.target.value})}
+                                        placeholder="Bitiş"
+                                        title="Bitiş Tarihi"
+                                    />
+
+                                    <button className="btn btn-ghost" onClick={() => { setDateFilter({ from: '', to: '' }); setRestaurantFilter('all'); }}>
+                                        ✕ Temizle
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="reservations-grid">
-                                {reservations.map(res => (
+                                {filteredReservations.map(res => (
                                     <div key={res.id} className="reservation-card">
                                         <div className="card-header">
                                             <div className="reservation-restaurant">
