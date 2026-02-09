@@ -191,6 +191,8 @@
             const [users, setUsers] = useState([]);
             const [feedbacks, setFeedbacks] = useState([]);
             const [amenities, setAmenities] = useState([]);
+            const [restaurants, setRestaurants] = useState([]);
+            const [reservations, setReservations] = useState([]);
             const [currentView, setCurrentView] = useState('dashboard');
             const [filters, setFilters] = useState({
                 department: 'all', type: 'all', dateFrom: '', dateTo: '', status: 'all', search: ''
@@ -217,10 +219,14 @@
                     const { data: usersData } = await supabase.from('users').select('*').order('id');
                     const { data: feedbacksData } = await supabase.from('feedbacks').select('*').order('created_at', { ascending: false });
                     const { data: amenitiesData } = await supabase.from('amenities').select('*').order('created_at', { ascending: false });
+                    const { data: restaurantsData } = await supabase.from('restaurants').select('*').order('name');
+                    const { data: reservationsData } = await supabase.from('reservations').select('*, restaurants(name)').order('reservation_date', { ascending: false });
                     
                     setUsers(usersData || []);
                     setFeedbacks(feedbacksData || []);
                     setAmenities(amenitiesData || []);
+                    setRestaurants(restaurantsData || []);
+                    setReservations(reservationsData || []);
                 } catch (error) {
                     console.error('Yükleme hatası:', error);
                 }
@@ -354,6 +360,28 @@
                             />
                         )}
 
+                        {currentView === 'alacarte' && (
+                            <AlaCarteView
+                                restaurants={restaurants}
+                                reservations={reservations}
+                                isAdmin={isAdmin}
+                                onAddRestaurant={() => { setModalType('restaurant'); setEditingItem(null); setShowModal(true); }}
+                                onEditRestaurant={(item) => { setEditingItem(item); setModalType('restaurant'); setShowModal(true); }}
+                                onDeleteRestaurant={async (id) => {
+                                    if (!confirm('Restoranı silmek istediğinizden emin misiniz?')) return;
+                                    await supabase.from('restaurants').delete().eq('id', id);
+                                    await loadData();
+                                }}
+                                onAddReservation={() => { setModalType('reservation'); setEditingItem(null); setShowModal(true); }}
+                                onEditReservation={(item) => { setEditingItem(item); setModalType('reservation'); setShowModal(true); }}
+                                onDeleteReservation={async (id) => {
+                                    if (!confirm('Rezervasyonu silmek istediğinizden emin misiniz?')) return;
+                                    await supabase.from('reservations').delete().eq('id', id);
+                                    await loadData();
+                                }}
+                            />
+                        )}
+
                         {currentView === 'analytics' && <AnalyticsView stats={stats} />}
                         
                         {currentView === 'users' && isAdmin && (
@@ -395,6 +423,18 @@
                                         }
                                     } else if (modalType === 'amenity') {
                                         await supabase.from('amenities').insert([{ ...data, created_by: currentUser.username }]);
+                                    } else if (modalType === 'restaurant') {
+                                        if (editingItem) {
+                                            await supabase.from('restaurants').update(data).eq('id', editingItem.id);
+                                        } else {
+                                            await supabase.from('restaurants').insert([{ ...data, created_by: currentUser.username }]);
+                                        }
+                                    } else if (modalType === 'reservation') {
+                                        if (editingItem) {
+                                            await supabase.from('reservations').update(data).eq('id', editingItem.id);
+                                        } else {
+                                            await supabase.from('reservations').insert([{ ...data, created_by: currentUser.username }]);
+                                        }
                                     } else {
                                         const updateData = { ...data };
                                         if (!updateData.password) delete updateData.password;
@@ -495,10 +535,10 @@
                             </form>
 
                             <div className="login-footer">
-                                <p className="demo-info">Her hakkı saklıdır. Oğuzhan Yılmaz®</p>
+                                <p className="demo-info">Demo Hesaplar</p>
                                 <div className="demo-accounts">
-                                    <span>Misafir Geri Bildirim Sistemi Beta v2</span>
-                                    <span></span>
+                                    <span>👑 admin / admin123</span>
+                                    <span>👤 kullanici / kullanici123</span>
                                 </div>
                             </div>
                         </div>
@@ -529,6 +569,9 @@
                         </button>
                         <button className={currentView === 'amenities' ? 'active' : ''} onClick={() => setCurrentView('amenities')}>
                             <span className="nav-icon">🎁</span> Oda İkramları
+                        </button>
+                        <button className={currentView === 'alacarte' ? 'active' : ''} onClick={() => setCurrentView('alacarte')}>
+                            <span className="nav-icon">🍽️</span> A'la Carte
                         </button>
                         <button className={currentView === 'analytics' ? 'active' : ''} onClick={() => setCurrentView('analytics')}>
                             <span className="nav-icon">📈</span> Analiz & Raporlar
@@ -865,6 +908,159 @@
             );
         }
 
+        function AlaCarteView({ restaurants, reservations, isAdmin, onAddRestaurant, onEditRestaurant, onDeleteRestaurant, onAddReservation, onEditReservation, onDeleteReservation }) {
+            const [activeTab, setActiveTab] = useState('reservations');
+
+            return (
+                <div className="view-container">
+                    <div className="view-header">
+                        <div>
+                            <h1>A'la Carte Rezervasyon</h1>
+                            <p>{restaurants.length} restoran, {reservations.length} rezervasyon</p>
+                        </div>
+                    </div>
+
+                    <div className="tabs">
+                        <button className={`tab ${activeTab === 'reservations' ? 'active' : ''}`} onClick={() => setActiveTab('reservations')}>
+                            📅 Rezervasyonlar
+                        </button>
+                        <button className={`tab ${activeTab === 'restaurants' ? 'active' : ''}`} onClick={() => setActiveTab('restaurants')}>
+                            🏛️ Restoranlar
+                        </button>
+                    </div>
+
+                    {activeTab === 'reservations' && (
+                        <div>
+                            <div className="section-header">
+                                <h2>Rezervasyonlar</h2>
+                                {isAdmin && (
+                                    <button className="btn btn-primary" onClick={onAddReservation}>
+                                        ➕ Yeni Rezervasyon
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="reservations-grid">
+                                {reservations.map(res => (
+                                    <div key={res.id} className="reservation-card">
+                                        <div className="card-header">
+                                            <div className="reservation-restaurant">
+                                                <h3>🍽️ {res.restaurants?.name || 'Restoran'}</h3>
+                                                <span className={`badge badge-status-${res.status}`}>
+                                                    {res.status === 'confirmed' ? '✅ Onaylı' : res.status === 'cancelled' ? '❌ İptal' : '⏳ Beklemede'}
+                                                </span>
+                                            </div>
+                                            {isAdmin && (
+                                                <div className="card-actions">
+                                                    <button className="action-btn" onClick={() => onEditReservation(res)}>✏️</button>
+                                                    <button className="action-btn danger" onClick={() => onDeleteReservation(res.id)}>🗑️</button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="reservation-details">
+                                            <div className="detail-row">
+                                                <span className="detail-label">👤 Misafir:</span>
+                                                <span className="detail-value">{res.guest_name}</span>
+                                            </div>
+                                            <div className="detail-row">
+                                                <span className="detail-label">🏠 Oda:</span>
+                                                <span className="detail-value">{res.room_number}</span>
+                                            </div>
+                                            {res.phone && (
+                                                <div className="detail-row">
+                                                    <span className="detail-label">📞 Telefon:</span>
+                                                    <span className="detail-value">{res.phone}</span>
+                                                </div>
+                                            )}
+                                            <div className="detail-row">
+                                                <span className="detail-label">👥 Kişi Sayısı:</span>
+                                                <span className="detail-value">{res.pax} kişi</span>
+                                            </div>
+                                            <div className="detail-row">
+                                                <span className="detail-label">📅 Tarih:</span>
+                                                <span className="detail-value">{formatDate(res.reservation_date)}</span>
+                                            </div>
+                                            <div className="detail-row">
+                                                <span className="detail-label">🕐 Saat:</span>
+                                                <span className="detail-value">{res.reservation_time}</span>
+                                            </div>
+                                            {res.special_requests && (
+                                                <div className="detail-row">
+                                                    <span className="detail-label">💬 Özel İstek:</span>
+                                                    <span className="detail-value">{res.special_requests}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'restaurants' && (
+                        <div>
+                            <div className="section-header">
+                                <h2>Restoranlar</h2>
+                                {isAdmin && (
+                                    <button className="btn btn-primary" onClick={onAddRestaurant}>
+                                        ➕ Yeni Restoran
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="restaurants-grid">
+                                {restaurants.map(rest => (
+                                    <div key={rest.id} className="restaurant-card">
+                                        <div className="card-header">
+                                            <div>
+                                                <h3>{rest.name}</h3>
+                                                <span className={`badge ${rest.is_active ? 'badge-success' : 'badge-danger'}`}>
+                                                    {rest.is_active ? '✅ Aktif' : '❌ Pasif'}
+                                                </span>
+                                            </div>
+                                            {isAdmin && (
+                                                <div className="card-actions">
+                                                    <button className="action-btn" onClick={() => onEditRestaurant(rest)}>✏️</button>
+                                                    <button className="action-btn danger" onClick={() => onDeleteRestaurant(rest.id)}>🗑️</button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <p className="restaurant-description">{rest.description}</p>
+
+                                        <div className="restaurant-info">
+                                            <div className="info-item">
+                                                <span className="info-icon">🪑</span>
+                                                <div>
+                                                    <p className="info-label">Masa Sayısı</p>
+                                                    <p className="info-value">{rest.table_count} masa</p>
+                                                </div>
+                                            </div>
+                                            <div className="info-item">
+                                                <span className="info-icon">👥</span>
+                                                <div>
+                                                    <p className="info-label">Maks. Kapasite</p>
+                                                    <p className="info-value">{rest.max_pax} kişi</p>
+                                                </div>
+                                            </div>
+                                            <div className="info-item">
+                                                <span className="info-icon">🕐</span>
+                                                <div>
+                                                    <p className="info-label">Çalışma Saati</p>
+                                                    <p className="info-value">{rest.opening_time} - {rest.closing_time}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
         function UsersView({ users, currentUser, onAdd, onEdit, onDelete }) {
             return (
                 <div className="view-container">
@@ -917,6 +1113,24 @@
                     amenity_type: 'Meyve Sepeti',
                     reason: '',
                     notes: ''
+                } : type === 'restaurant' ? {
+                    name: '',
+                    description: '',
+                    table_count: 10,
+                    max_pax: 6,
+                    opening_time: '18:00',
+                    closing_time: '23:00',
+                    is_active: true
+                } : type === 'reservation' ? {
+                    restaurant_id: '',
+                    guest_name: '',
+                    room_number: '',
+                    phone: '',
+                    pax: 2,
+                    reservation_date: new Date().toISOString().split('T')[0],
+                    reservation_time: '20:00',
+                    status: 'confirmed',
+                    special_requests: ''
                 } : {
                     username: '',
                     password: '',
@@ -925,6 +1139,20 @@
                 }
             ));
             const [saving, setSaving] = useState(false);
+
+            // Restoranları almak için
+            const [restaurants, setRestaurants] = useState([]);
+            
+            useEffect(() => {
+                if (type === 'reservation') {
+                    supabase.from('restaurants').select('*').order('name').then(({ data }) => {
+                        setRestaurants(data || []);
+                        if (data && data.length > 0 && !formData.restaurant_id) {
+                            setFormData({...formData, restaurant_id: data[0].id});
+                        }
+                    });
+                }
+            }, [type]);
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
@@ -939,13 +1167,197 @@
                         <div className="modal-header">
                             <h2>
                                 {item ? 'Düzenle' : 'Yeni Ekle'} - 
-                                {type === 'feedback' ? ' Geri Bildirim' : type === 'amenity' ? ' Oda İkramı' : ' Kullanıcı'}
+                                {type === 'feedback' ? ' Geri Bildirim' : 
+                                 type === 'amenity' ? ' Oda İkramı' : 
+                                 type === 'restaurant' ? ' Restoran' :
+                                 type === 'reservation' ? ' Rezervasyon' : ' Kullanıcı'}
                             </h2>
                             <button className="close-btn" onClick={onClose}>×</button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="modal-form">
-                            {type === 'feedback' ? (
+                            {type === 'restaurant' ? (
+                                <>
+                                    <div className="form-group">
+                                        <label>Restoran Adı *</label>
+                                        <input
+                                            type="text"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                            placeholder="Örn: La Dolce Vita"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Açıklama</label>
+                                        <textarea
+                                            value={formData.description}
+                                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                            rows={2}
+                                            placeholder="Örn: İtalyan mutfağı - deniz manzaralı"
+                                        />
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Masa Sayısı *</label>
+                                            <input
+                                                type="number"
+                                                value={formData.table_count}
+                                                onChange={(e) => setFormData({...formData, table_count: parseInt(e.target.value)})}
+                                                min="1"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Maksimum Kişi *</label>
+                                            <input
+                                                type="number"
+                                                value={formData.max_pax}
+                                                onChange={(e) => setFormData({...formData, max_pax: parseInt(e.target.value)})}
+                                                min="1"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Açılış Saati *</label>
+                                            <input
+                                                type="time"
+                                                value={formData.opening_time}
+                                                onChange={(e) => setFormData({...formData, opening_time: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Kapanış Saati *</label>
+                                            <input
+                                                type="time"
+                                                value={formData.closing_time}
+                                                onChange={(e) => setFormData({...formData, closing_time: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.is_active}
+                                                onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                                            />
+                                            Aktif (rezervasyon alınsın)
+                                        </label>
+                                    </div>
+                                </>
+                            ) : type === 'reservation' ? (
+                                <>
+                                    <div className="form-group">
+                                        <label>Restoran *</label>
+                                        <select
+                                            value={formData.restaurant_id}
+                                            onChange={(e) => setFormData({...formData, restaurant_id: e.target.value})}
+                                            required
+                                        >
+                                            <option value="">Seçiniz...</option>
+                                            {restaurants.map(r => (
+                                                <option key={r.id} value={r.id}>{r.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Misafir Adı *</label>
+                                            <input
+                                                type="text"
+                                                value={formData.guest_name}
+                                                onChange={(e) => setFormData({...formData, guest_name: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Oda No *</label>
+                                            <input
+                                                type="text"
+                                                value={formData.room_number}
+                                                onChange={(e) => setFormData({...formData, room_number: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Telefon</label>
+                                            <input
+                                                type="tel"
+                                                value={formData.phone}
+                                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                                placeholder="+90 5XX XXX XX XX"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Kişi Sayısı *</label>
+                                            <input
+                                                type="number"
+                                                value={formData.pax}
+                                                onChange={(e) => setFormData({...formData, pax: parseInt(e.target.value)})}
+                                                min="1"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Tarih *</label>
+                                            <input
+                                                type="date"
+                                                value={formData.reservation_date}
+                                                onChange={(e) => setFormData({...formData, reservation_date: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Saat *</label>
+                                            <input
+                                                type="time"
+                                                value={formData.reservation_time}
+                                                onChange={(e) => setFormData({...formData, reservation_time: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Durum *</label>
+                                        <select
+                                            value={formData.status}
+                                            onChange={(e) => setFormData({...formData, status: e.target.value})}
+                                            required
+                                        >
+                                            <option value="confirmed">Onaylı</option>
+                                            <option value="pending">Beklemede</option>
+                                            <option value="cancelled">İptal</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Özel İstekler</label>
+                                        <textarea
+                                            value={formData.special_requests}
+                                            onChange={(e) => setFormData({...formData, special_requests: e.target.value})}
+                                            rows={3}
+                                            placeholder="Örn: Pencere kenarı masa, doğum günü kutlaması..."
+                                        />
+                                    </div>
+                                </>
+                            ) : type === 'feedback' ? (
                                 <>
                                     <div className="form-row">
                                         <div className="form-group">
@@ -2234,6 +2646,181 @@
             .search-input {
                 min-width: 100%;
             }
+        }
+
+        /* A'LA CARTE */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-header h2 {
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        .reservations-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .reservation-card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+            transition: all 0.3s;
+        }
+
+        .reservation-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .reservation-restaurant {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .reservation-restaurant h3 {
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .reservation-details {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .detail-row {
+            display: flex;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--gray-700);
+            min-width: 120px;
+        }
+
+        .detail-value {
+            color: var(--gray-900);
+        }
+
+        .restaurants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .restaurant-card {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--accent);
+            transition: all 0.3s;
+        }
+
+        .restaurant-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .restaurant-card h3 {
+            font-size: 22px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .restaurant-description {
+            font-size: 14px;
+            color: var(--gray-700);
+            margin: 16px 0;
+            line-height: 1.6;
+        }
+
+        .restaurant-info {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .info-icon {
+            font-size: 32px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gray-50);
+            border-radius: 12px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--gray-700);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
         }
     </style>
 </body>
